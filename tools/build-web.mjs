@@ -1,4 +1,4 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,5 +25,8 @@ for (const entry of entries) {
 
 await rm(path.join(out, 'image-pack', 'uploads'), { recursive: true, force: true });
 await rm(path.join(out, 'image-pack', 'android-icons'), { recursive: true, force: true });
+
+const { version } = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'));
+await writeFile(path.join(out, 'version.json'), JSON.stringify({ version }) + '\n');
 
 console.log('Web build ready in www/');

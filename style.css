@@ -349,6 +349,24 @@ canvas:active {
   position: absolute; top: 8px; right: 10px; width: 36px; height: 36px; border: 0;
   border-radius: 50%; background: #e8efe6; color: #243325; font: 700 26px/1 system-ui, sans-serif; cursor: pointer;
 }
+#update-banner {
+  position: fixed; top: 60px; left: 50%; z-index: 25; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; max-width: calc(100vw - 32px);
+  padding: 10px 12px 10px 16px; border-radius: 14px;
+  background: linear-gradient(120deg, #1f6a35f2, #174d2af2); color: #fff;
+  font: 700 13px system-ui, sans-serif;
+  box-shadow: 0 12px 32px #0006, inset 0 1px #ffffff33;
+}
+#update-banner[hidden] { display: none; }
+#update-banner a {
+  padding: 7px 12px; border-radius: 999px; background: #ffd479; color: #2a2410;
+  font-weight: 900; text-decoration: none; white-space: nowrap;
+}
+#update-banner a:hover { background: #ffe6a6; }
+#update-close {
+  width: 28px; height: 28px; border: 0; border-radius: 50%; background: #ffffff26;
+  color: #fff; font: 700 18px/1 system-ui, sans-serif; cursor: pointer;
+}
 #play-time {
   position: fixed; left: 16px; bottom: 16px; z-index: 5; padding: 8px 12px;
   border-radius: 10px; background: rgba(0, 0, 0, 0.48); color: #fff;

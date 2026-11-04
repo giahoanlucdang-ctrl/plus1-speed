@@ -1,11 +1,23 @@
 const { app, BrowserWindow, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('node:path');
 const net = require('node:net');
 const { startServer } = require('../serve-game.js');
 
 const ROOT = path.join(__dirname, '..');
+const UPDATE_INTERVAL = 4 * 60 * 60 * 1000;
 let gameServer = null;
 let mainWindow = null;
+
+function setupAutoUpdate() {
+  if (!app.isPackaged) return;
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('error', () => {});
+  const check = () => autoUpdater.checkForUpdates().catch(() => {});
+  check();
+  setInterval(check, UPDATE_INTERVAL);
+}
 
 function isPortFree(port) {
   return new Promise((resolve) => {
@@ -69,7 +81,10 @@ if (!app.requestSingleInstanceLock()) {
     mainWindow.focus();
   });
 
-  app.whenReady().then(createWindow);
+  app.whenReady().then(async () => {
+    await createWindow();
+    setupAutoUpdate();
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

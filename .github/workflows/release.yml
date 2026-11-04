@@ -23,7 +23,10 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: release/*.exe
+          path: |
+            release/*.exe
+            release/*.exe.blockmap
+            release/latest.yml
           if-no-files-found: error
 
   linux:
@@ -42,6 +45,8 @@ jobs:
           path: |
             release/*.AppImage
             release/*.deb
+            release/*.blockmap
+            release/latest-linux.yml
           if-no-files-found: error
 
   android:

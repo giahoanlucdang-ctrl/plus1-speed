@@ -22,6 +22,7 @@ import { initNetplay, bubbleSlot } from './netplay.js';
 import './music.js';
 import { footsteps, playSfx } from './sfx.js';
 import { addChatMessage, revealChatHistory } from './chat-history.js';
+import { checkForUpdate } from './updater.js';
 
 await loadProgress();
 await ensureProfile();
@@ -911,3 +912,4 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+void checkForUpdate();
