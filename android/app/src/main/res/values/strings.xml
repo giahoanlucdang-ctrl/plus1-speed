@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">+1 Speed</string>
+    <string name="title_activity_main">+1 Speed</string>
+    <string name="package_name">com.plus1speed.game</string>
+    <string name="custom_url_scheme">com.plus1speed.game</string>
+</resources>

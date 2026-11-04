@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>+1 Speed</title>
+  <link rel="icon" type="image/png" sizes="192x192" href="image-pack/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="image-pack/icon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#4F83E8">
+  <link rel="stylesheet" href="style.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/build/three.module.min.js",
+        "three/addons/": "./vendor/three/examples/jsm/",
+        "cannon-es": "./vendor/cannon-es/cannon-es.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="loading-screen" role="status" aria-live="polite">
+    <div class="loading-card">
+      <div class="loading-orbit" aria-hidden="true"><span></span></div>
+      <strong>Preparing your world</strong>
+      <span id="loading-detail">Loading game and graphics…</span>
+    </div>
+  </div>
+  <div id="game-error" role="alert" hidden></div>
+  <script>
+    (() => {
+      const detail = document.getElementById('loading-detail');
+      setTimeout(() => {
+        if (document.getElementById('loading-screen')?.isConnected) {
+          detail.textContent = 'Still loading… check your internet connection if this takes a while.';
+        }
+      }, 6000);
+      const panel = document.getElementById('game-error');
+      const show = (message) => {
+        panel.textContent = `Game rendering error: ${String(message || 'Unknown error').slice(0, 240)}`;
+        panel.hidden = false;
+      };
+      addEventListener('error', (event) => {
+        if (event.target instanceof HTMLScriptElement) show('A game module could not be loaded. Check your internet connection and reload.');
+        else if (event.message) show(event.message);
+      }, true);
+      addEventListener('unhandledrejection', (event) => show(event.reason?.message || event.reason));
+    })();
+  </script>
+  <div id="win-toast" role="status" aria-live="polite" hidden>+1 win!</div>
+  <section id="shop-ui" aria-label="Gear shop" hidden>
+    <div class="shop-card">
+      <button id="shop-close" type="button" aria-label="Close shop">×</button>
+      <div class="shop-heading">
+        <div class="shop-kicker">WORLD 1 • UPGRADES</div>
+        <h2>Gear Shop</h2>
+        <p id="shop-speed-description">Build up your speed income permanently.</p>
+      </div>
+      <div class="shop-upgrade-card">
+        <div class="shop-upgrade-icon" aria-hidden="true">⚡</div>
+        <div class="shop-upgrade-info">
+          <strong>Speed Generator</strong>
+          <span>Earn more Speed every second, forever.</span>
+          <div id="shop-speed-level">Current bonus: +0 Speed/s</div>
+        </div>
+      </div>
+      <button id="shop-speed-buy" type="button">Buy +1 Speed/s · 2 Wins</button>
+      <div id="shop-message" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+  <section id="exchange-shop-ui" aria-label="Exchange Wins to Speed shop" hidden>
+    <div class="shop-card exchange-card">
+      <button id="exchange-shop-close" type="button" aria-label="Close exchange shop">×</button>
+      <div class="shop-heading">
+        <div class="shop-kicker">WORLD 1 • EXCHANGE</div>
+        <h2>Exchange Wins to Speed</h2>
+        <p>Trade your Wins for Speed.</p>
+      </div>
+      <div class="shop-upgrade-card">
+        <div class="shop-upgrade-icon" aria-hidden="true">⇄</div>
+        <div class="shop-upgrade-info">
+          <strong>Win Exchange</strong>
+          <span>1 Win gives you 1,000 Speed.</span>
+          <div id="exchange-balance">Wins: 0 · Speed: 1</div>
+        </div>
+      </div>
+      <form id="exchange-form">
+        <label for="exchange-wins-input">Wins to exchange</label>
+        <input id="exchange-wins-input" type="number" min="1" step="1" value="1" inputmode="numeric">
+        <div id="exchange-preview" aria-live="polite">You will receive +1,000 Speed</div>
+        <button id="exchange-submit" type="submit">Exchange</button>
+      </form>
+      <div id="exchange-message" role="status" aria-live="polite"></div>
+      <div class="shop-upgrade-card">
+        <div class="shop-upgrade-icon" aria-hidden="true">⇄</div>
+        <div class="shop-upgrade-info">
+          <strong>Speed to Wins</strong>
+          <span>1 Win = 1,000 Speed. Spend 1,000 Speed to receive 1 Win.</span>
+        </div>
+      </div>
+      <form id="reverse-exchange-form">
+        <label for="exchange-speed-input">Speed to exchange</label>
+        <input id="exchange-speed-input" type="number" min="1000" step="1000" value="1000" inputmode="numeric">
+        <div id="reverse-exchange-preview" aria-live="polite">You will receive +1 Win</div>
+        <button id="reverse-exchange-submit" type="submit">Exchange Speed</button>
+      </form>
+      <div id="reverse-exchange-message" role="status" aria-live="polite"></div>
+    </div>
+  </section>
+  <div id="rebirth-celebration" aria-hidden="true" hidden>
+    <img id="rebirth-confetti" src="image-pack/confetti.gif" alt="">
+    <div>+1 Rebirth!</div>
+  </div>
+  <div id="avatar-menu">
+    <button id="settings-btn" type="button" aria-haspopup="dialog" aria-controls="settings-ui">Settings</button>
+    <button id="avatar-btn">Characters</button>
+    <button id="worlds-btn" type="button">Worlds</button>
+    <button id="leaderboard-btn" type="button">Leaderboard</button>
+    <div id="avatar-list" hidden></div>
+    <button id="rebirth-btn">Rebirth</button>
+  </div>
+  <section id="settings-ui" hidden aria-label="Settings" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <div class="settings-card">
+      <button id="settings-close" type="button" aria-label="Close settings">×</button>
+      <div class="world-picker-kicker">GAME OPTIONS</div>
+      <h2 id="settings-title">Settings</h2>
+      <div class="settings-list">
+        <div class="settings-row"><div><strong>Music</strong><small>Background music</small></div><button id="music-btn" type="button" aria-pressed="true">Mute music</button></div>
+      </div>
+    </div>
+  </section>
+  <section id="world-picker" hidden aria-label="Choose a world">
+    <div class="world-picker-card">
+      <button id="world-picker-close" type="button" aria-label="Close world picker">×</button>
+      <div class="world-picker-kicker">EXPLORE</div>
+      <h2>Choose your world</h2>
+      <p>New worlds are bought once with Wins. Your speed, wins and rebirths stay with you.</p>
+      <p id="world-picker-msg" class="world-picker-msg" role="status"></p>
+      <div class="world-grid">
+        <button class="world-choice meadow" data-world="1" type="button"><span>01</span><strong>Starter Meadow</strong><small>Green hills & classic obby</small></button>
+        <button class="world-choice moon" data-world="2" type="button"><span>02</span><strong>Moon Run</strong><small>Space hills & moving tracks</small></button>
+        <button class="world-choice crystal" data-world="3" type="button"><span>03</span><strong>Crystal Sky</strong><small>Four obbies · neon crystal theme</small></button>
+        <button class="world-choice sunset" data-world="4" type="button"><span>04</span><strong>Sunset Isles</strong><small>Four obbies · warm desert theme</small></button>
+      </div>
+    </div>
+  </section>
+  <section id="profile-modal" hidden aria-label="Create your profile">
+    <form id="profile-form" class="profile-card">
+      <div class="world-picker-kicker">WELCOME</div>
+      <h2>Create your profile</h2>
+      <p>Pick the name other players will see. Your password stays on this device.</p>
+      <label class="profile-field">
+        <span>Nickname</span>
+        <input id="profile-name" name="nickname" type="text" maxlength="20" autocomplete="nickname" placeholder="4–20 characters" required>
+      </label>
+      <label class="profile-field">
+        <span>Password</span>
+        <input id="profile-password" name="password" type="password" maxlength="64" autocomplete="new-password" placeholder="At least 9 characters" required>
+      </label>
+      <div id="profile-error" class="profile-error" role="alert"></div>
+      <button id="profile-submit" type="submit">Start playing</button>
+    </form>
+  </section>
+  <section id="leaderboard-ui" hidden aria-label="Leaderboard">
+    <div class="leaderboard-card">
+      <button id="leaderboard-close" type="button" aria-label="Close leaderboard">×</button>
+      <h2>Leaderboard</h2>
+      <p class="leaderboard-note">Local single-player stats</p>
+      <div class="leaderboard-row leaderboard-head"><span>Player</span><span>Speed</span><span>Wins</span><span>Rebirths</span></div>
+      <div class="leaderboard-row"><strong>You</strong><span id="lb-speed">1</span><span id="lb-wins">0</span><span id="lb-rebirths">0</span></div>
+    </div>
+  </section>
+  <div id="world-indicator" aria-live="polite">WORLD 01 · STARTER MEADOW</div>
+  <div id="play-time" role="timer" aria-live="off">Play time 00:00:00</div>
+  <div id="stats">
+    <div class="stat"><span class="long">Speed</span><span class="short">S</span><div class="stat-value"><span id="speed">1</span><span id="speed-rate">1/s</span></div></div>
+    <div class="stat"><span class="long">Wins</span><span class="short">W</span><div class="stat-value"><span id="wins">0</span></div></div>
+    <div class="stat"><span class="long">Rebirths</span><span class="short">R</span><div class="stat-value"><span id="rebirths">0</span></div></div>
+  </div>
+  <div id="rebirth-modal" hidden>
+    <div class="card">
+      <button id="rebirth-close" aria-label="Close">×</button>
+      <div class="rb-line">Rebirths: <span id="rb-count">0</span></div>
+      <div class="rb-line">Boost: x<span id="rb-boost">1</span></div>
+      <div class="rb-line"><span id="rb-wins">0</span>/<span id="rb-needed">10</span> to Rebirth</div>
+      <p>Rebirthing will reset all speed and wins, but make you stronger</p>
+      <button id="rebirth-do">Rebirth</button>
+    </div>
+  </div>
+  <div id="chat-dock">
+    <section id="chat-history" aria-label="Chat history">
+      <div class="chat-history-top"><button id="chat-close" type="button" aria-label="Hide chat history">X</button></div>
+      <div id="chat-messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
+    </section>
+    <form id="chat" autocomplete="off">
+      <input id="chat-input" maxlength="120" placeholder="Chat" aria-label="Chat" enterkeyhint="send">
+      <button id="chat-open" type="button" aria-label="Show chat history" aria-controls="chat-history" aria-expanded="true" hidden>...</button>
+    </form>
+  </div>
+  <script type="module" src="js-pack/game.js"></script>
+</body>
+</html>

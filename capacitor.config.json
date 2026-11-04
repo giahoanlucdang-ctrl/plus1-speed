@@ -1,0 +1,8 @@
+{
+  "appId": "com.plus1speed.game",
+  "appName": "+1 Speed",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  }
+}

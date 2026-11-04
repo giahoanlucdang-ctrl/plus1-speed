@@ -1,0 +1,15 @@
+{
+  "name": "+1 Speed",
+  "short_name": "+1 Speed",
+  "description": "Blocky speed-running world: every second you get +1 speed.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#4F83E8",
+  "theme_color": "#4F83E8",
+  "icons": [
+    { "src": "image-pack/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "image-pack/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

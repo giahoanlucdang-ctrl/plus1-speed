@@ -1,0 +1,81 @@
+{
+  "name": "plus1-speed",
+  "version": "1.0.0",
+  "private": true,
+  "description": "+1 Speed local game with LAN multiplayer",
+  "author": {
+    "name": "Plus1 Speed",
+    "email": "plus1speed@example.com"
+  },
+  "main": "electron/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "build:web": "node tools/build-web.mjs",
+    "dist:win": "electron-builder --win nsis --x64 --publish never",
+    "dist:linux": "electron-builder --linux AppImage deb --x64 --publish never",
+    "android:sync": "npm run build:web && cap sync android",
+    "android:apk": "npm run android:sync && cd android && gradlew.bat assembleDebug"
+  },
+  "dependencies": {
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/cli": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "electron": "22.3.27",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.plus1speed.game",
+    "productName": "+1 Speed",
+    "asar": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "index.html",
+      "style.css",
+      "manifest.webmanifest",
+      "serve-game.js",
+      "package.json",
+      "js-pack/**/*",
+      "vendor/**/*",
+      "glb-pack/**/*",
+      "image-pack/**/*",
+      "music-pack/**/*",
+      "electron/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "image-pack/icon-1024.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "+1 Speed",
+      "artifactName": "Plus1Speed-Setup-${version}.${ext}"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Game",
+      "icon": "image-pack/icon-512.png",
+      "maintainer": "Plus1 Speed <plus1speed@example.com>",
+      "artifactName": "Plus1Speed-${version}-${arch}.${ext}"
+    }
+  },
+  "allowScripts": {
+    "electron@22.3.27": true
+  }
+}
