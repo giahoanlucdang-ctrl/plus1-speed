@@ -123,7 +123,7 @@ function setAvatarOpacity(root, opacity) {
   });
 }
 
-export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus, onLan, name } = {}) {
+export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus, onLan, onJoin, onLeft, onRoster, name } = {}) {
   const remotes = new Map();
   const clock = new SnapshotClock();
   const urlName = new URLSearchParams(location.search).get('name')?.trim().slice(0, 20);
@@ -157,8 +157,10 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
     if (r.avatar) setAvatarOpacity(r.avatar.root, afk ? 0.5 : 1);
   }
 
+  const emitRoster = () => onRoster?.(remotes.size + 1);
+
   function addRemote(p) {
-    if (p.id === myId || remotes.has(p.id)) return;
+    if (p.id === myId || remotes.has(p.id)) return false;
     const group = new THREE.Group();
     group.position.set(p.x, p.y, p.z);
     group.rotation.y = p.r;
@@ -184,6 +186,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
     };
     remotes.set(p.id, r);
     setRemoteAvatar(r, p.avatar);
+    return true;
   }
 
   async function setRemoteAvatar(r, id) {
@@ -201,7 +204,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
 
   function removeRemote(id) {
     const r = remotes.get(id);
-    if (!r) return;
+    if (!r) return null;
     remotes.delete(id);
     r.removed = true;
     r.group.traverse((o) => {
@@ -211,6 +214,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
       }
     });
     r.group.removeFromParent();
+    return r.playerName;
   }
 
   function onSnapshot(m) {
@@ -234,6 +238,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
         myId = m.id;
         onSpawn?.(m.spawn);
         for (const p of m.players) addRemote(p);
+        emitRoster();
         sendState();
         if (m.lan && !lanShown) {
           lanShown = true;
@@ -241,11 +246,15 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
         }
         break;
       case 'join':
-        addRemote(m.player);
+        if (addRemote(m.player)) onJoin?.(m.player.name || 'A player');
+        emitRoster();
         break;
-      case 'left':
-        removeRemote(m.id);
+      case 'left': {
+        const gone = removeRemote(m.id);
+        if (gone) onLeft?.(gone);
+        emitRoster();
         break;
+      }
       case 'avatar': {
         const r = remotes.get(m.id);
         if (r) setRemoteAvatar(r, m.avatar);
@@ -302,6 +311,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
       socket = null;
       myId = null;
       for (const id of [...remotes.keys()]) removeRemote(id);
+      emitRoster();
       if (wasOnline) onStatus?.('offline');
       scheduleReconnect();
     };

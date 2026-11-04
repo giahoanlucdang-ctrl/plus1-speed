@@ -31,8 +31,6 @@ const fromRow = r => r ? ({ speed:r.speed,wins:r.wins,rebirths:r.rebirths,walkTi
 const count = v => Number.isFinite(v) ? Math.max(0,Math.min(1e12,Math.floor(v))) : 0;
 const finite = v => Number.isFinite(v) ? v : 0;
 export const DOOR = { half: 2 };
-// A VIP gate planted in front of the Gears Shop that warps to World 2.
-export const VIP_PORTAL = { x: -20, z: 0.8, halfW: 1.6, halfD: 0.6, world: 2 };
 export const WORLD2 = { x: 2000 };
 export const WORLD3 = { x: 4000 };
 export const WORLD4 = { x: 6000 };
@@ -373,10 +371,6 @@ export function stepSim(s,dt) {
   s.stats.walkTime+=dt;
     if(s.stats.walkTime>=1){s.stats.walkTime-=1;s.stats.speed=Math.min(1e12,s.stats.speed+gain(s.stats,1+s.stats.wins)+(s.stats.shopSpeed??0));}
   if(s.world===1&&s.course.door.off&&p.x>15.2&&p.x<17&&Math.abs(p.z)<DOOR.half){s.world=2;resetSim(s);return;}
-  // The VIP gate in front of the Gears Shop teleports instead of walking through.
-  if(s.world===1&&unlocked.includes(VIP_PORTAL.world)&&Math.abs(p.x-VIP_PORTAL.x)<=VIP_PORTAL.halfW&&Math.abs(p.z-VIP_PORTAL.z)<=VIP_PORTAL.halfD&&p.y<4){
-    s.world=VIP_PORTAL.world;resetSim(s);return;
-  }
   // The return doorway sits in the west wall of world 2. Trigger at the
   // inside edge so the player's collision radius cannot strand them there.
   if(s.world===2&&p.x<=WORLD2.x-14.5&&p.x>WORLD2.x-17&&Math.abs(p.z)<DOOR.half+0.5){s.world=1;resetSim(s);return;}

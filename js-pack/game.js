@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { createSim, doRebirth, addCourseCollider, teleportToWorld, WORLD_COSTS } from './server.js';
 import { Prediction } from './prediction.js';
 import { AVATARS, loadAvatar, setAnim } from './avatars.js';
-import { progress, loadProgress, markDirty, bindRebirth } from './progress.js';
-import { ensureProfile } from './profile.js';
+import { progress, loadProgress, markDirty, bindRebirth, exportSave, importSave } from './progress.js';
+import { startAuth } from './auth.js';
 import { boosted, initRebirth, renderRebirth } from './rebirth.js';
 import { buildTracks } from './track.js';
 import { shatter, updateShatters } from './shatter.js';
@@ -12,8 +12,6 @@ import { stick, jump } from './touch.js';
 import { buildDoor } from './door.js';
 import { buildWorld2 } from './world2.js';
 import { buildShop, buildExchangeShop, SHOP_X, SHOP_Z, EXCHANGE_SHOP_X, EXCHANGE_SHOP_Z } from './shop.js';
-import { buildVipPortal } from './vip-portal.js';
-import { VIP_PORTAL } from './server.js';
 import { buildSpawnMarkers } from './spawn-marker.js';
 import { buildSpawnPlants } from './vegetation.js';
 import { buildSpeedEffects } from './speed-effects.js';
@@ -23,17 +21,18 @@ import './music.js';
 import { footsteps, playSfx } from './sfx.js';
 import { addChatMessage, revealChatHistory } from './chat-history.js';
 import { checkForUpdate } from './updater.js';
+import { isLowGraphics, hasGraphicsPreference, setLowGraphics, renderPixelRatio } from './quality.js';
 
 await loadProgress();
-await ensureProfile();
+await startAuth();
 
 const MOVE_SPEED = 6;
 const RUN_SPEED = 9;
 const H = 2;
 
 const canvas = document.getElementById('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(devicePixelRatio);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isLowGraphics() });
+renderer.setPixelRatio(renderPixelRatio());
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
@@ -63,7 +62,6 @@ platform.walkSpeed = 100;
 const solids = [platform, ...track.solids];
 const shop = buildShop(scene);
 const exchangeShop = buildExchangeShop(scene);
-const vipPortal = buildVipPortal(scene);
 const vegetation = buildSpawnPlants(scene);
 const spawnMarkers = buildSpawnMarkers(scene);
 const speedEffects = buildSpeedEffects(scene);
@@ -212,16 +210,7 @@ for (const x of [-3.2, 3.2]) {
 }
 addCourseCollider(player.course, { x: EXCHANGE_SHOP_X - 3.45, y: 3.4, z: EXCHANGE_SHOP_Z - 0.31 }, { x: EXCHANGE_SHOP_X + 3.45, y: 3.62, z: EXCHANGE_SHOP_Z + 0.07 });
 addCourseCollider(player.course, { x: EXCHANGE_SHOP_X - 3.8, y: 3.72, z: EXCHANGE_SHOP_Z - 1.175 }, { x: EXCHANGE_SHOP_X + 3.8, y: 4.08, z: EXCHANGE_SHOP_Z + 1.175 });
-// VIP gate frame: the posts block, the glowing pane stays walkable so the
-// teleport trigger in stepSim can fire.
-for (const x of [-2.25, 2.25]) {
-  addCourseCollider(player.course,
-    { x: VIP_PORTAL.x + x - 0.32, y: 0, z: VIP_PORTAL.z - 0.32 },
-    { x: VIP_PORTAL.x + x + 0.32, y: 6.0, z: VIP_PORTAL.z + 0.32 });
-}
-addCourseCollider(player.course,
-  { x: VIP_PORTAL.x - 2.5, y: 5.5, z: VIP_PORTAL.z - 0.3 },
-  { x: VIP_PORTAL.x + 2.5, y: 6.1, z: VIP_PORTAL.z + 0.3 });
+// VIP gate frame removed: World 2 is entered from the Worlds menu.
 for (const box of extraWorlds.solids) addCourseCollider(player.course,
   { x: box.min.x, y: box.min.y, z: box.min.z },
   { x: box.max.x, y: box.max.y, z: box.max.z });
@@ -268,6 +257,51 @@ const settingsUi = document.getElementById('settings-ui');
 document.getElementById('settings-btn').addEventListener('click', () => { settingsUi.hidden = false; });
 document.getElementById('settings-close').addEventListener('click', () => { settingsUi.hidden = true; });
 settingsUi.addEventListener('click', (event) => { if (event.target === settingsUi) settingsUi.hidden = true; });
+const graphicsBtn = document.getElementById('graphics-btn');
+function renderGraphicsButton() {
+  const low = isLowGraphics();
+  graphicsBtn.textContent = low ? 'Use high graphics' : 'Use low graphics';
+  graphicsBtn.setAttribute('aria-pressed', String(low));
+}
+function applyGraphicsMode() {
+  renderer.setPixelRatio(renderPixelRatio());
+  renderer.setSize(innerWidth, innerHeight, false);
+  renderGraphicsButton();
+}
+graphicsBtn.addEventListener('click', () => {
+  setLowGraphics(!isLowGraphics());
+  applyGraphicsMode();
+});
+renderGraphicsButton();
+const fpsBtn = document.getElementById('fps-btn');
+const fpsCounter = document.getElementById('fps-counter');
+let fpsShown = false;
+try { fpsShown = localStorage.getItem('fps-visible') === 'true'; } catch {}
+function renderFpsButton() {
+  fpsBtn.textContent = fpsShown ? 'Hide FPS' : 'Show FPS';
+  fpsBtn.setAttribute('aria-pressed', String(fpsShown));
+  if (fpsCounter) fpsCounter.hidden = !fpsShown;
+}
+fpsBtn.addEventListener('click', () => {
+  fpsShown = !fpsShown;
+  try { localStorage.setItem('fps-visible', String(fpsShown)); } catch {}
+  renderFpsButton();
+});
+renderFpsButton();
+const restoreFile = document.getElementById('restore-file');
+document.getElementById('backup-save-btn').addEventListener('click', () => exportSave());
+document.getElementById('restore-save-btn').addEventListener('click', () => restoreFile.click());
+restoreFile.addEventListener('change', async () => {
+  const file = restoreFile.files?.[0];
+  restoreFile.value = '';
+  if (!file) return;
+  if (!confirm('Load this backup and replace your current progress?')) return;
+  if (!(await importSave(file))) {
+    alert('That file is not a +1 Speed backup.');
+    return;
+  }
+  location.reload();
+});
 worldButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const targetWorld = Number(button.dataset.world);
@@ -456,6 +490,21 @@ const net = initNetplay(scene, H, {
     revealChatHistory();
   },
   onLan: (url) => addChatMessage({ name: 'Server', text: `Rủ bạn bè cùng wifi mở ${url} để chơi chung.` }),
+  onJoin: (who) => {
+    addChatMessage({ name: 'Room', text: `${who} joined.` });
+    revealChatHistory();
+  },
+  onLeft: (who) => addChatMessage({ name: 'Room', text: `${who} left.` }),
+  onRoster: (count) => {
+    const roomEl = document.getElementById('room-count');
+    const onlineEl = document.getElementById('online-count');
+    if (roomEl) {
+      roomEl.textContent = `${count} ${count === 1 ? 'player' : 'players'} online`;
+      roomEl.hidden = count <= 1;
+    }
+    if (onlineEl) onlineEl.textContent = String(count);
+    refreshFriends();
+  },
   onStatus: (status) => {
     const ui = document.getElementById('lan-ui');
     const label = document.getElementById('lan-status');
@@ -827,7 +876,8 @@ function draw(dt) {
   playTimeSaveTimer += dt;
   if (playTimeSaveTimer >= 1) { playTimeSaveTimer = 0; markDirty(); }
   const w = innerWidth, h = innerHeight;
-  if (canvas.width !== Math.floor(w * devicePixelRatio) || canvas.height !== Math.floor(h * devicePixelRatio)) {
+  const ratio = renderPixelRatio();
+  if (canvas.width !== Math.floor(w * ratio) || canvas.height !== Math.floor(h * ratio)) {
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -835,7 +885,7 @@ function draw(dt) {
 
   renderOffset.multiplyScalar(Math.exp(-15*dt));
   playerMesh.position.copy(player.pos).add(renderOffset);
-  vegetation.update(dt, player.pos, player.vel);
+  if (!isLowGraphics()) vegetation.update(dt, player.pos, player.vel);
   spawnMarkers.update(dt);
   extraWorlds.update(dt, progress.unlocked);
   updateShatters(dt);
@@ -843,7 +893,6 @@ function draw(dt) {
 
   track.update(dt, player.course);
   world2.update(dt, player.course, progress.unlocked);
-  vipPortal.update(dt);
   updateDoor(progress.unlocked);
   showWorld(player.world);
 
@@ -889,19 +938,47 @@ function draw(dt) {
 
   mp.update(dt);
   renderer.render(scene, camera);
-  document.getElementById('loading-screen')?.remove();
+  const loadingScreen = document.getElementById('loading-screen');
+  if (loadingScreen) loadingScreen.remove();
+  else loadingCleared = true;
+}
+
+let loadingCleared = false;
+const PERF_WINDOW = 5;
+const PERF_MIN_FPS = 35;
+let perfFrames = 0;
+let perfSeconds = 0;
+let perfChecked = false;
+function trackPerformance(rawDt) {
+  if (!loadingCleared) {
+    perfFrames = 0;
+    perfSeconds = 0;
+    return;
+  }
+  perfFrames += 1;
+  perfSeconds += Math.min(rawDt, 0.25);
+  if (perfSeconds < PERF_WINDOW) return;
+  perfChecked = true;
+  const fps = perfFrames / perfSeconds;
+  if (fps < PERF_MIN_FPS && !isLowGraphics() && !hasGraphicsPreference()) {
+    setLowGraphics(true);
+    applyGraphicsMode();
+  }
 }
 
 const STEP = 1 / 120;
 let acc = 0;
 let last = performance.now();
+let fpsFrames = 0;
+let fpsElapsed = 0;
 function frame(now) {
   if (document.hidden) {
     last = now;
     requestAnimationFrame(frame);
     return;
   }
-  const dt = Math.min((now - last) / 1000, 0.1);
+  const rawDt = Math.max(0, (now - last) / 1000);
+  const dt = Math.min(rawDt, 0.1);
   acc += dt;
   last = now;
   while (acc >= STEP) {
@@ -909,6 +986,16 @@ function frame(now) {
     acc -= STEP;
   }
   draw(dt);
+  if (!perfChecked) trackPerformance(rawDt);
+  if (fpsShown) {
+    fpsFrames += 1;
+    fpsElapsed += rawDt;
+    if (fpsElapsed >= 0.5) {
+      fpsCounter.textContent = `${Math.round(fpsFrames / fpsElapsed)} FPS`;
+      fpsFrames = 0;
+      fpsElapsed = 0;
+    }
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

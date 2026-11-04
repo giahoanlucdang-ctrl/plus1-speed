@@ -15,17 +15,34 @@ for (const clip of Object.values(oneShots)) {
 }
 
 let muted = false;
-try { muted = localStorage.getItem('music-muted') === 'true'; } catch {}
+try { muted = localStorage.getItem('sfx-muted') === 'true'; } catch {}
 let lastWin = 0;
 
 function stopWalk() {
   if (!walk.paused) walk.pause();
 }
 
-export function setSfxMuted(value) {
-  muted = value;
-  if (muted) stopWalk();
+function renderButton() {
+  const btn = document.getElementById('sfx-btn');
+  if (!btn) return;
+  btn.textContent = muted ? 'Unmute effects' : 'Mute effects';
+  btn.setAttribute('aria-pressed', String(muted));
 }
+
+export function isSfxMuted() {
+  return muted;
+}
+
+export function setSfxMuted(value) {
+  muted = Boolean(value);
+  try { localStorage.setItem('sfx-muted', String(muted)); } catch {}
+  if (muted) stopWalk();
+  renderButton();
+}
+
+document.getElementById('sfx-btn')?.addEventListener('click', () => setSfxMuted(!muted));
+document.addEventListener('DOMContentLoaded', renderButton);
+renderButton();
 
 export function footsteps(active, rate = 1) {
   if (!active || muted) {

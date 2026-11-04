@@ -1,14 +1,18 @@
 // Looping background music; browsers only allow playback after a user gesture
-import { setSfxMuted } from './sfx.js';
-
 const music = new Audio('music-pack/music.mp4');
 music.loop = true;
-music.volume = 0.5;
 const button = document.getElementById('music-btn');
+const volume = document.getElementById('music-volume');
 let enabled = true;
-try { enabled = localStorage.getItem('music-muted') !== 'true'; } catch {}
+let level = 50;
+try {
+  enabled = localStorage.getItem('music-muted') !== 'true';
+  const stored = Number(localStorage.getItem('music-volume'));
+  if (Number.isFinite(stored)) level = Math.max(0, Math.min(100, stored));
+} catch {}
 music.muted = !enabled;
-setSfxMuted(!enabled);
+music.volume = level / 100;
+if (volume) volume.value = String(level);
 
 function renderButton() {
   button.textContent = enabled ? 'Mute music' : 'Unmute music';
@@ -18,11 +22,15 @@ renderButton();
 button.addEventListener('click', () => {
   enabled = !enabled;
   music.muted = !enabled;
-  setSfxMuted(!enabled);
   try { localStorage.setItem('music-muted', String(!enabled)); } catch {}
   renderButton();
   if (enabled) start();
   else music.pause();
+});
+volume?.addEventListener('input', () => {
+  level = Math.max(0, Math.min(100, Number(volume.value)));
+  music.volume = level / 100;
+  try { localStorage.setItem('music-volume', String(level)); } catch {}
 });
 
 const start = () => {

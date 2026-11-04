@@ -31,6 +31,7 @@ export const progress = {
   passwordHash: typeof saved.passwordHash === 'string' ? saved.passwordHash : '',
   passwordSalt: typeof saved.passwordSalt === 'string' ? saved.passwordSalt : '',
   friends: normalizeFriends(saved.friends),
+  savedAt: Number.isFinite(saved.savedAt) ? saved.savedAt : 0,
 };
 let privateSaveActive = false;
 let privateSaveChain = Promise.resolve();
@@ -49,6 +50,41 @@ function applySavedProgress(data) {
   if (typeof data.passwordHash === 'string') progress.passwordHash = data.passwordHash;
   if (typeof data.passwordSalt === 'string') progress.passwordSalt = data.passwordSalt;
   if (Array.isArray(data.friends)) progress.friends = normalizeFriends(data.friends);
+}
+
+let cloudSaver = null;
+export function bindCloudSave(saver) { cloudSaver = saver; }
+export function progressSnapshot() {
+  return {
+    speed: progress.speed,
+    wins: progress.wins,
+    rebirths: progress.rebirths,
+    shopSpeed: progress.shopSpeed,
+    walkTime: progress.walkTime,
+    playTime: progress.playTime,
+    avatar: progress.avatar,
+    unlocked: [...progress.unlocked],
+    nickname: progress.nickname,
+    friends: [...progress.friends],
+    savedAt: progress.savedAt,
+  };
+}
+export function applyProgressData(data) {
+  applySavedProgress(data);
+  dispatchEvent(new CustomEvent('progress:server'));
+}
+export function resetProgressData() {
+  progress.speed = 1;
+  progress.wins = 0;
+  progress.rebirths = 0;
+  progress.shopSpeed = 0;
+  progress.walkTime = 0;
+  progress.playTime = 0;
+  progress.avatar = 'noob';
+  progress.unlocked = [1];
+  progress.friends = [];
+  progress.savedAt = Date.now();
+  dispatchEvent(new CustomEvent('progress:server'));
 }
 
 async function writePrivateSave() {
@@ -86,12 +122,45 @@ export async function loadProgress() {
   return progress;
 }
 export async function saveProgress() {
+  progress.savedAt = Date.now();
   let browserSaved = false;
   let privateSaved = false;
   try { localStorage.setItem(KEY, JSON.stringify(progress)); browserSaved = true; } catch {}
   try { await writePrivateSave(); privateSaved = true; } catch {}
+  cloudSaver?.();
   return { browserSaved, privateSaved };
 }
+export function exportSave() {
+  const payload = {
+    game: '+1 Speed',
+    format: 1,
+    exportedAt: new Date().toISOString(),
+    progress: progressSnapshot(),
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `plus1-speed-save-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function importSave(file) {
+  let data;
+  try { data = JSON.parse(await file.text()); } catch { return false; }
+  const source = data && typeof data === 'object' && data.progress && typeof data.progress === 'object' ? data.progress : data;
+  if (!source || typeof source !== 'object') return false;
+  if (!['speed', 'wins', 'rebirths', 'playTime'].some((key) => key in source)) return false;
+  applySavedProgress(source);
+  progress.savedAt = Date.now();
+  dispatchEvent(new CustomEvent('progress:server'));
+  await saveProgress();
+  return true;
+}
+
 export async function clearSavedProgress() {
   try { localStorage.removeItem(KEY); } catch {}
   try { await privateSaveChain; } catch {}
@@ -102,6 +171,8 @@ export async function clearSavedProgress() {
   privateSaveActive = false;
 }
 export function markDirty() {
+  progress.savedAt = Date.now();
+  cloudSaver?.();
   if (privateSaveActive) {
     void writePrivateSave().catch(() => {});
     return true;

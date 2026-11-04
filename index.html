@@ -14,7 +14,8 @@
       "imports": {
         "three": "./vendor/three/build/three.module.min.js",
         "three/addons/": "./vendor/three/examples/jsm/",
-        "cannon-es": "./vendor/cannon-es/cannon-es.js"
+        "cannon-es": "./vendor/cannon-es/cannon-es.js",
+        "supabase": "./vendor/supabase/supabase.js"
       }
     }
   </script>
@@ -130,9 +131,20 @@
       <h2 id="settings-title">Settings</h2>
       <div class="settings-list">
         <div class="settings-row"><div><strong>Music</strong><small>Background music</small></div><button id="music-btn" type="button" aria-pressed="true">Mute music</button></div>
+        <div class="settings-row"><div><strong>Music volume</strong><small>Background music level</small></div><input id="music-volume" type="range" min="0" max="100" value="50" step="5" aria-label="Music volume"></div>
+        <div class="settings-row"><div><strong>Sound effects</strong><small>Jump, win and footstep sounds</small></div><button id="sfx-btn" type="button" aria-pressed="true">Mute effects</button></div>
+        <div class="settings-row"><div><strong>Graphics</strong><small>Low mode for older phones</small></div><button id="graphics-btn" type="button" aria-pressed="false">Use low graphics</button></div>
+        <div class="settings-row"><div><strong>FPS display</strong><small>Show the current frame rate</small></div><button id="fps-btn" type="button" aria-pressed="false">Show FPS</button></div>
+        <div class="settings-row"><div><strong>Backup save</strong><small>Download your progress as a file</small></div><button id="backup-save-btn" type="button">Backup</button></div>
+        <div class="settings-row"><div><strong>Restore save</strong><small>Load progress from a backup file</small></div><button id="restore-save-btn" type="button">Restore</button></div>
+        <div class="settings-row"><div><strong>Google account</strong><small id="account-status">Offline</small></div><button id="link-google-btn" type="button">Link Google</button></div>
+        <div class="settings-row"><div><strong>Change password</strong><small>Update your account password</small></div><button id="change-password-btn" type="button">Change</button></div>
+        <div class="settings-row"><div><strong>Reset game</strong><small>Wipe wins, rebirths and worlds</small></div><button id="reset-game-btn" type="button">Reset</button></div>
+        <div class="settings-row"><div><strong>Delete account</strong><small>Remove the account and cloud save</small></div><button id="delete-account-btn" type="button">Delete</button></div>
       </div>
     </div>
   </section>
+  <input id="restore-file" type="file" accept="application/json,.json" hidden>
   <section id="world-picker" hidden aria-label="Choose a world">
     <div class="world-picker-card">
       <button id="world-picker-close" type="button" aria-label="Close world picker">×</button>
@@ -165,6 +177,72 @@
       <button id="profile-submit" type="submit">Start playing</button>
     </form>
   </section>
+  <section id="auth-modal" hidden aria-label="Account" role="dialog" aria-modal="true">
+    <div class="auth-card">
+      <div class="world-picker-kicker">PLUS1 ACCOUNT</div>
+      <p id="auth-note" class="auth-note" hidden></p>
+
+      <form id="auth-login" class="auth-panel">
+        <h2>Log in</h2>
+        <label class="profile-field"><span>Email</span><input id="login-email" type="email" autocomplete="email" maxlength="120" required></label>
+        <label class="profile-field"><span>Password</span><input id="login-password" type="password" autocomplete="current-password" maxlength="72" required></label>
+        <div id="login-error" class="profile-error" role="alert"></div>
+        <button id="login-submit" type="submit">Log in</button>
+        <button id="google-btn" class="auth-google" type="button">Continue with Google</button>
+        <div class="auth-links">
+          <button id="forgot-btn" class="auth-link" type="button">Forgot password?</button>
+          <button id="signup-tab" class="auth-link" type="button">Create account</button>
+        </div>
+        <button id="offline-btn" class="auth-offline" type="button">Play offline</button>
+      </form>
+
+      <form id="auth-signup" class="auth-panel" hidden>
+        <h2>Create account</h2>
+        <label class="profile-field"><span>Nickname</span><input id="signup-nickname" type="text" maxlength="20" autocomplete="nickname" required></label>
+        <label class="profile-field"><span>Email</span><input id="signup-email" type="email" autocomplete="email" maxlength="120" required></label>
+        <label class="profile-field"><span>Password</span><input id="signup-password" type="password" autocomplete="new-password" maxlength="72" required></label>
+        <div id="signup-error" class="profile-error" role="alert"></div>
+        <button id="signup-submit" type="submit">Create account</button>
+        <div class="auth-links"><button id="login-tab" class="auth-link" type="button">Back to log in</button></div>
+      </form>
+
+      <form id="auth-forgot" class="auth-panel" hidden>
+        <h2>Recover account</h2>
+        <p class="auth-hint">Enter your email and we will send a 6-digit code.</p>
+        <label class="profile-field"><span>Email</span><input id="forgot-email" type="email" autocomplete="email" maxlength="120" required></label>
+        <div id="forgot-error" class="profile-error" role="alert"></div>
+        <button id="forgot-submit" type="submit">Send code</button>
+        <div class="auth-links"><button id="forgot-back" class="auth-link" type="button">Back to log in</button></div>
+      </form>
+
+      <form id="auth-code" class="auth-panel" hidden>
+        <h2>Enter code</h2>
+        <p id="code-hint" class="auth-hint">We sent a 6-digit code to your email.</p>
+        <label class="profile-field"><span>6-digit code</span><input id="code-input" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" required></label>
+        <div id="code-error" class="profile-error" role="alert"></div>
+        <button id="code-submit" type="submit">Verify code</button>
+        <div class="auth-links"><button id="code-back" class="auth-link" type="button">Back to log in</button></div>
+      </form>
+
+      <form id="auth-reset" class="auth-panel" hidden>
+        <h2>New password</h2>
+        <label class="profile-field"><span>New password</span><input id="reset-password" type="password" autocomplete="new-password" maxlength="72" required></label>
+        <label class="profile-field"><span>Confirm password</span><input id="reset-confirm" type="password" autocomplete="new-password" maxlength="72" required></label>
+        <div id="reset-error" class="profile-error" role="alert"></div>
+        <button id="reset-submit" type="submit">Save password</button>
+      </form>
+
+      <form id="auth-change" class="auth-panel" hidden>
+        <h2>Change password</h2>
+        <label class="profile-field"><span>Current password</span><input id="change-current" type="password" autocomplete="current-password" maxlength="72" required></label>
+        <label class="profile-field"><span>New password</span><input id="change-password" type="password" autocomplete="new-password" maxlength="72" required></label>
+        <div id="change-error" class="profile-error" role="alert"></div>
+        <button id="change-submit" type="submit">Change password</button>
+        <div class="auth-links"><button id="change-cancel" class="auth-link" type="button">Cancel</button></div>
+      </form>
+    </div>
+  </section>
+  <div id="auth-toast" role="status" hidden></div>
   <section id="leaderboard-ui" hidden aria-label="Leaderboard">
     <div class="leaderboard-card">
       <button id="leaderboard-close" type="button" aria-label="Close leaderboard">×</button>
@@ -178,7 +256,7 @@
     <div class="leaderboard-card friends-card">
       <button id="friends-close" type="button" aria-label="Close friends">×</button>
       <h2>Friends</h2>
-      <p class="leaderboard-note">Players in this server · add them to your friends list</p>
+      <p class="leaderboard-note">Players in this server: <span id="online-count">1</span> · add them to your friends list</p>
       <div class="leaderboard-row leaderboard-head"><span>Player</span><span>Wins</span><span>Rebirths</span><span></span></div>
       <div id="friends-online" class="friends-list"></div>
       <h3 class="friends-subhead">Your friends</h3>
@@ -206,6 +284,8 @@
     </div>
   </section>
   <div id="world-indicator" aria-live="polite">WORLD 01 · STARTER MEADOW</div>
+  <div id="room-count" hidden></div>
+  <div id="fps-counter" hidden></div>
   <div id="play-time" role="timer" aria-live="off">Play time 00:00:00</div>
   <div id="stats">
     <div class="stat"><span class="long">Speed</span><span class="short">S</span><div class="stat-value"><span id="speed">1</span><span id="speed-rate">1/s</span></div></div>
