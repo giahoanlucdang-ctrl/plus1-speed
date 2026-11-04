@@ -441,6 +441,8 @@ const net = initNetplay(scene, H, {
     r: facing,
     a: animName,
     d: player.dead > 0 ? 1 : 0,
+    wins: progress.wins,
+    rebirths: progress.rebirths,
   }),
   onSpawn: ({ x, z }) => {
     player.pos.set(x, 0, z);
@@ -454,9 +456,42 @@ const net = initNetplay(scene, H, {
   },
   onLan: (url) => addChatMessage({ name: 'Server', text: `Rủ bạn bè cùng wifi mở ${url} để chơi chung.` }),
   onStatus: (status) => {
+    const ui = document.getElementById('lan-ui');
+    const label = document.getElementById('lan-status');
+    if (ui && label && !ui.hidden) {
+      label.textContent = status === 'online'
+        ? 'Đã kết nối LAN server.'
+        : status === 'connecting' ? 'Đang kết nối…' : 'Mất kết nối, đang thử lại…';
+    }
     if (status === 'offline') addChatMessage({ name: 'Server', text: 'Mất kết nối server, đang thử lại…' });
   },
 });
+const lanUi = document.getElementById('lan-ui');
+const lanAddress = document.getElementById('lan-address');
+const lanStatus = document.getElementById('lan-status');
+const lanBtn = document.getElementById('lan-btn');
+if (net.isNative) {
+  lanBtn.hidden = false;
+  lanBtn.addEventListener('click', () => {
+    lanUi.hidden = false;
+    try { lanAddress.value = (localStorage.getItem('lan-server-address') || '').replace(/^wss?:\/\//, ''); } catch {}
+    lanStatus.textContent = net.isConnected() ? 'Đã kết nối LAN server.' : '';
+    lanAddress.focus();
+  });
+  document.getElementById('lan-close').addEventListener('click', () => { lanUi.hidden = true; });
+  document.getElementById('lan-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!net.connectTo(lanAddress.value)) {
+      lanStatus.textContent = 'Địa chỉ không hợp lệ. Ví dụ: 192.168.1.5:8000';
+      return;
+    }
+    lanStatus.textContent = 'Đang kết nối…';
+  });
+  document.getElementById('lan-disconnect').addEventListener('click', () => {
+    net.disconnect();
+    lanStatus.textContent = 'Đã ngắt kết nối.';
+  });
+}
 const localBubble = bubbleSlot(playerMesh, H + 0.25);
 const mp = {
   setAvatar(id) {
@@ -501,8 +536,107 @@ const lbSpeed = document.getElementById('lb-speed');
 const lbWins = document.getElementById('lb-wins');
 const lbRebirths = document.getElementById('lb-rebirths');
 const leaderboardUi = document.getElementById('leaderboard-ui');
-document.getElementById('leaderboard-btn').addEventListener('click', () => { leaderboardUi.hidden = false; });
+document.getElementById('leaderboard-btn').addEventListener('click', () => {
+  document.getElementById('friends-ui').hidden = true;
+  leaderboardUi.hidden = false;
+});
 document.getElementById('leaderboard-close').addEventListener('click', () => { leaderboardUi.hidden = true; });
+
+// Friends: anyone visible in this server can be added from the Friends tab.
+const friendsUi = document.getElementById('friends-ui');
+const friendsOnlineEl = document.getElementById('friends-online');
+const friendsListEl = document.getElementById('friends-list');
+const friendKey = (name) => name.toLowerCase();
+const isFriend = (name) => progress.friends.some((n) => friendKey(n) === friendKey(name));
+
+function toggleFriend(name) {
+  const key = friendKey(name);
+  const index = progress.friends.findIndex((n) => friendKey(n) === key);
+  if (index >= 0) progress.friends.splice(index, 1);
+  else if (progress.friends.length < 100) progress.friends.push(name.trim().slice(0, 20));
+  markDirty();
+  refreshFriends();
+}
+
+function friendRow({ name, wins, rebirths, online, afk }) {
+  const row = document.createElement('div');
+  row.className = 'leaderboard-row friend-row';
+  const nameCell = document.createElement('span');
+  nameCell.className = 'friend-name';
+  nameCell.append(name);
+  if (online) {
+    const badge = document.createElement('em');
+    badge.className = afk ? 'friend-online afk' : 'friend-online';
+    badge.textContent = afk ? 'AFK' : 'Online';
+    nameCell.append(badge);
+  } else {
+    const badge = document.createElement('em');
+    badge.className = 'friend-offline';
+    badge.textContent = 'Offline';
+    nameCell.append(badge);
+  }
+  const winsCell = document.createElement('span');
+  winsCell.textContent = wins;
+  const rebirthsCell = document.createElement('span');
+  rebirthsCell.textContent = rebirths;
+  const action = document.createElement('button');
+  action.type = 'button';
+  const added = isFriend(name);
+  action.className = added ? 'friend-action remove' : 'friend-action';
+  action.textContent = added ? (online ? 'Remove' : 'Unfriend') : 'Add friend';
+  action.addEventListener('click', () => toggleFriend(name));
+  row.append(nameCell, winsCell, rebirthsCell, action);
+  return row;
+}
+
+function refreshFriends() {
+  if (friendsUi.hidden) return;
+  const online = net.players();
+  const onlineByKey = new Map(online.map((p) => [friendKey(p.name), p]));
+
+  friendsOnlineEl.replaceChildren();
+  if (!online.length) {
+    const empty = document.createElement('p');
+    empty.className = 'friends-empty';
+    empty.textContent = 'No other players online. Share your LAN link so friends can join.';
+    friendsOnlineEl.append(empty);
+  } else {
+    online.forEach((p) => friendsOnlineEl.append(friendRow({
+      name: p.name,
+      wins: p.wins,
+      rebirths: p.rebirths,
+      online: true,
+      afk: p.afk,
+    })));
+  }
+
+  friendsListEl.replaceChildren();
+  if (!progress.friends.length) {
+    const empty = document.createElement('p');
+    empty.className = 'friends-empty';
+    empty.textContent = 'No friends yet. Add players from the list above.';
+    friendsListEl.append(empty);
+  } else {
+    [...progress.friends].sort((a, b) => a.localeCompare(b)).forEach((name) => {
+      const live = onlineByKey.get(friendKey(name));
+      friendsListEl.append(friendRow({
+        name,
+        wins: live ? live.wins : '—',
+        rebirths: live ? live.rebirths : '—',
+        online: !!live,
+        afk: live?.afk ?? false,
+      }));
+    });
+  }
+}
+
+document.getElementById('friends-btn').addEventListener('click', () => {
+  leaderboardUi.hidden = true;
+  friendsUi.hidden = false;
+  refreshFriends();
+});
+document.getElementById('friends-close').addEventListener('click', () => { friendsUi.hidden = true; });
+setInterval(refreshFriends, 1000);
 function formatPlayTime(value) {
   const seconds = Math.floor(value);
   const h = String(Math.floor(seconds / 3600)).padStart(2, '0');

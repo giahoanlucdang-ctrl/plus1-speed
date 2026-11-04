@@ -316,6 +316,39 @@ canvas:active {
   position: absolute; top: 8px; right: 10px; width: 36px; height: 36px; border: 0;
   border-radius: 50%; background: #e8efe6; color: #243325; font: 700 26px/1 system-ui, sans-serif; cursor: pointer;
 }
+#friends-ui {
+  position: fixed; inset: 0; z-index: 26; display: grid; place-items: center;
+  pointer-events: none; font-family: system-ui, sans-serif;
+}
+#friends-ui[hidden] { display: none; }
+.friends-card { width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; }
+.friends-card > h2 { margin-right: 40px; }
+.friend-row { grid-template-columns: 1.5fr repeat(3, 1fr); align-items: center; }
+.friend-name { display: flex; min-width: 0; align-items: center; gap: 8px; font-weight: 700; overflow-wrap: anywhere; }
+.friend-online {
+  flex: none; padding: 2px 7px; border-radius: 999px; background: #d9f3d6; color: #2c6b2f;
+  font-size: 10px; font-style: normal; font-weight: 900; letter-spacing: .04em;
+}
+.friend-online.afk { background: #ffe7b8; color: #7a5200; }
+.friend-offline { color: #8a988a; font-weight: 700; }
+.friends-empty { margin: 4px 6px 10px; color: #5f6f60; font-size: 14px; }
+.friends-subhead { margin: 20px 6px 4px; font-size: 17px; }
+.friend-action {
+  justify-self: end; padding: 6px 12px; border: 0; border-radius: 999px;
+  background: #267a34; color: #fff; font: 800 12px system-ui, sans-serif; cursor: pointer;
+}
+.friend-action:hover { background: #1e6129; }
+.friend-action.remove { background: #b4453c; }
+.friend-action.remove:hover { background: #96362f; }
+@media (max-width: 520px) {
+  .friend-row { gap: 6px; font-size: 13px; padding: 10px 4px; }
+  .friend-name { flex-wrap: wrap; gap: 4px; }
+  .friend-action { padding: 5px 8px; font-size: 11px; }
+}
+#friends-close {
+  position: absolute; top: 8px; right: 10px; width: 36px; height: 36px; border: 0;
+  border-radius: 50%; background: #e8efe6; color: #243325; font: 700 26px/1 system-ui, sans-serif; cursor: pointer;
+}
 #play-time {
   position: fixed; left: 16px; bottom: 16px; z-index: 5; padding: 8px 12px;
   border-radius: 10px; background: rgba(0, 0, 0, 0.48); color: #fff;
@@ -351,6 +384,35 @@ body.touch #play-time { bottom: 176px; }
   border: 0; border-radius: 50%; background: #e5edf0; color: #253a46;
   font: 700 25px/1 system-ui, sans-serif; cursor: pointer;
 }
+#lan-ui {
+  position: fixed; inset: 0; z-index: 32; display: grid; place-items: center;
+  padding: 18px; box-sizing: border-box;
+  background: #07121a9c; backdrop-filter: blur(7px);
+  font-family: system-ui, sans-serif;
+}
+#lan-ui[hidden] { display: none; }
+.lan-hint { margin: -10px 0 18px; color: #5d7078; font-size: 14px; line-height: 1.45; }
+#lan-close {
+  position: absolute; top: 14px; right: 14px; width: 38px; height: 38px;
+  border: 0; border-radius: 50%; background: #e5edf0; color: #253a46;
+  font: 700 25px/1 system-ui, sans-serif; cursor: pointer;
+}
+.lan-form { display: grid; gap: 12px; }
+.lan-form label { display: grid; gap: 6px; color: #31474f; font-size: 13px; font-weight: 700; }
+.lan-form input {
+  width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid #cfdde2;
+  border-radius: 12px; background: #fff; color: #203543; font: 600 15px system-ui, sans-serif;
+}
+.lan-form input:focus { outline: 2px solid #267a34; outline-offset: 1px; }
+.lan-status { min-height: 18px; color: #2b7a3d; font-size: 13px; font-weight: 700; }
+.lan-actions { display: flex; gap: 10px; }
+.lan-actions button {
+  flex: 1; padding: 12px; border: 0; border-radius: 12px;
+  font: 800 14px system-ui, sans-serif; cursor: pointer;
+}
+#lan-connect { background: #267a34; color: #fff; }
+#lan-connect:hover { background: #1e6129; }
+#lan-disconnect { background: #e8f0f1; color: #30444b; }
 .settings-list { display: grid; gap: 10px; }
 .settings-row {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;

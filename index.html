@@ -118,6 +118,8 @@
     <button id="avatar-btn">Characters</button>
     <button id="worlds-btn" type="button">Worlds</button>
     <button id="leaderboard-btn" type="button">Leaderboard</button>
+    <button id="friends-btn" type="button">Friends</button>
+    <button id="lan-btn" type="button" hidden>LAN</button>
     <div id="avatar-list" hidden></div>
     <button id="rebirth-btn">Rebirth</button>
   </div>
@@ -170,6 +172,37 @@
       <p class="leaderboard-note">Local single-player stats</p>
       <div class="leaderboard-row leaderboard-head"><span>Player</span><span>Speed</span><span>Wins</span><span>Rebirths</span></div>
       <div class="leaderboard-row"><strong>You</strong><span id="lb-speed">1</span><span id="lb-wins">0</span><span id="lb-rebirths">0</span></div>
+    </div>
+  </section>
+  <section id="friends-ui" hidden aria-label="Friends" role="dialog" aria-modal="true">
+    <div class="leaderboard-card friends-card">
+      <button id="friends-close" type="button" aria-label="Close friends">×</button>
+      <h2>Friends</h2>
+      <p class="leaderboard-note">Players in this server · add them to your friends list</p>
+      <div class="leaderboard-row leaderboard-head"><span>Player</span><span>Wins</span><span>Rebirths</span><span></span></div>
+      <div id="friends-online" class="friends-list"></div>
+      <h3 class="friends-subhead">Your friends</h3>
+      <div class="leaderboard-row leaderboard-head"><span>Player</span><span>Wins</span><span>Rebirths</span><span></span></div>
+      <div id="friends-list" class="friends-list"></div>
+    </div>
+  </section>
+  <section id="lan-ui" hidden aria-label="LAN server" role="dialog" aria-modal="true">
+    <div class="settings-card">
+      <button id="lan-close" type="button" aria-label="Close LAN settings">×</button>
+      <div class="world-picker-kicker">MULTIPLAYER</div>
+      <h2>Join LAN server</h2>
+      <p class="lan-hint">Mở <strong>Mo game.bat</strong> trên PC để tạo phòng, rồi nhập địa chỉ IP trong chat của PC (ví dụ 192.168.1.5:8000).</p>
+      <form id="lan-form" class="lan-form" autocomplete="off">
+        <label>
+          <span>PC address</span>
+          <input id="lan-address" type="text" maxlength="60" placeholder="192.168.1.5:8000" inputmode="url" required>
+        </label>
+        <div id="lan-status" class="lan-status" role="status" aria-live="polite"></div>
+        <div class="lan-actions">
+          <button id="lan-connect" type="submit">Connect</button>
+          <button id="lan-disconnect" type="button">Disconnect</button>
+        </div>
+      </form>
     </div>
   </section>
   <div id="world-indicator" aria-live="polite">WORLD 01 · STARTER MEADOW</div>

@@ -57,7 +57,7 @@ function startMultiplayer(server) {
       name: `Player ${index}`,
       avatar: 'noob',
       lastActive: Date.now(),
-      state: { x: spawn[0], y: 0, z: spawn[1], r: 0, a: 'idle', d: 0 },
+      state: { x: spawn[0], y: 0, z: spawn[1], r: 0, a: 'idle', d: 0, wins: 0, rebirths: 0 },
     };
     players.set(socket, info);
     socket.send(JSON.stringify({
@@ -92,6 +92,8 @@ function startMultiplayer(server) {
         state.r = clampNumber(msg.r, -26, 26);
         state.a = na;
         state.d = msg.d ? 1 : 0;
+        if (Number.isFinite(msg.wins)) state.wins = Math.min(1e12, Math.max(0, Math.floor(msg.wins)));
+        if (Number.isFinite(msg.rebirths)) state.rebirths = Math.min(1e12, Math.max(0, Math.floor(msg.rebirths)));
       } else if (msg.type === 'avatar') {
         if (typeof msg.avatar === 'string' && msg.avatar) {
           info.avatar = msg.avatar.slice(0, 24);
@@ -124,6 +126,8 @@ function startMultiplayer(server) {
       p.state.a,
       p.state.d,
       t - p.lastActive > AFK_MS ? 1 : 0,
+      p.state.wins,
+      p.state.rebirths,
     ]);
     const payload = JSON.stringify({ type: 'snap', t, players: list });
     for (const client of wss.clients) {

@@ -3,6 +3,21 @@ const KEY = 'single-player-progress';
 const PRIVATE_SAVE_FILE = 'plus1-speed-save.json';
 let saved = {};
 try { saved = JSON.parse(localStorage.getItem(KEY) ?? '{}'); } catch {}
+function normalizeFriends(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    const raw = typeof item === 'string' ? item : item?.name;
+    if (typeof raw !== 'string') continue;
+    const name = raw.trim().slice(0, 20);
+    if (!name || seen.has(name.toLowerCase())) continue;
+    seen.add(name.toLowerCase());
+    out.push(name);
+    if (out.length >= 100) break;
+  }
+  return out;
+}
 export const progress = {
   speed: Number.isFinite(saved.speed) ? saved.speed : 1,
   wins: Number.isFinite(saved.wins) ? saved.wins : 0,
@@ -15,6 +30,7 @@ export const progress = {
   nickname: typeof saved.nickname === 'string' ? saved.nickname.slice(0, 20) : '',
   passwordHash: typeof saved.passwordHash === 'string' ? saved.passwordHash : '',
   passwordSalt: typeof saved.passwordSalt === 'string' ? saved.passwordSalt : '',
+  friends: normalizeFriends(saved.friends),
 };
 let privateSaveActive = false;
 let privateSaveChain = Promise.resolve();
@@ -32,6 +48,7 @@ function applySavedProgress(data) {
   if (typeof data.nickname === 'string') progress.nickname = data.nickname.slice(0, 20);
   if (typeof data.passwordHash === 'string') progress.passwordHash = data.passwordHash;
   if (typeof data.passwordSalt === 'string') progress.passwordSalt = data.passwordSalt;
+  if (Array.isArray(data.friends)) progress.friends = normalizeFriends(data.friends);
 }
 
 async function writePrivateSave() {

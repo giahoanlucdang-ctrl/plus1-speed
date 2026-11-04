@@ -7,8 +7,19 @@ const SEND_INTERVAL = 0.1;
 const WALK_SPEED = 6;
 const RUN_SPEED = 9;
 const RECONNECT_DELAY = 2500;
-// The Android build has no local server, so skip WebSocket attempts there.
+const LAN_HOST_KEY = 'lan-server-address';
+// The Android build has no local server, so it joins a PC-hosted LAN server instead.
 const nativeApp = !!globalThis.Capacitor?.isNativePlatform?.();
+
+function normalizeAddress(raw) {
+  let text = String(raw || '').trim();
+  if (!text) return '';
+  if (/^wss?:\/\//i.test(text)) return text.replace(/\/+$/, '');
+  text = text.replace(/^https?:\/\//i, '').replace(/[/?#].*$/, '');
+  if (!/^[a-z0-9.-]+(:\d{1,5})?$/i.test(text)) return '';
+  if (!/:\d+$/.test(text)) text += ':8000';
+  return `ws://${text}`;
+}
 
 // A text label on a rounded card, as a sprite `height` world units tall per line
 function textSprite(lines, { height, bg, fg, font = 700, pad = 18 }) {
@@ -121,6 +132,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
   let myId = null;
   let myAvatar = 'noob';
   let connected = false;
+  let manualUrl = '';
   let sendTimer = 0;
   let retryTimer = 0;
   let destroyed = false;
@@ -155,9 +167,12 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
     group.add(nameTag);
     scene.add(group);
     const r = {
+      id: p.id,
       group,
       name: nameTag,
       playerName: p.name,
+      wins: Number.isFinite(p.wins) ? p.wins : 0,
+      rebirths: Number.isFinite(p.rebirths) ? p.rebirths : 0,
       bubble: bubbleSlot(group, height + 0.65),
       avatar: null,
       avatarId: null,
@@ -200,12 +215,14 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
 
   function onSnapshot(m) {
     clock.observe(m.t, performance.now());
-    for (const [id, x, y, z, r, a, d, afk] of m.players) {
+    for (const [id, x, y, z, r, a, d, afk, wins, rebirths] of m.players) {
       if (id === myId) continue;
       const remote = remotes.get(id);
       if (!remote) continue;
       remote.motion.push({ t: m.t, x, y, z, r, a, d, n: 0 });
       remote.afkTarget = !!afk;
+      if (Number.isFinite(wins)) remote.wins = wins;
+      if (Number.isFinite(rebirths)) remote.rebirths = rebirths;
     }
   }
 
@@ -247,6 +264,7 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
 
   function scheduleReconnect() {
     if (destroyed || retryTimer) return;
+    if (nativeApp && !manualUrl) return;
     retryTimer = setTimeout(() => {
       retryTimer = 0;
       connect();
@@ -254,11 +272,12 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
   }
 
   function connect() {
-    if (destroyed || nativeApp) return;
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    if (destroyed) return;
+    const url = manualUrl || (nativeApp ? '' : `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`);
+    if (!url) return;
     let ws;
     try {
-      ws = new WebSocket(`${proto}//${location.host}`);
+      ws = new WebSocket(url);
     } catch {
       scheduleReconnect();
       return;
@@ -297,12 +316,53 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
       r: normalizeAngle(s.r || 0),
       a: s.a || 'idle',
       d: s.d ? 1 : 0,
+      wins: Number.isFinite(s.wins) ? s.wins : 0,
+      rebirths: Number.isFinite(s.rebirths) ? s.rebirths : 0,
     });
   }
 
+  function connectTo(address) {
+    const url = normalizeAddress(address);
+    if (!url) return false;
+    manualUrl = url;
+    try { localStorage.setItem(LAN_HOST_KEY, url); } catch {}
+    clearTimeout(retryTimer);
+    retryTimer = 0;
+    const old = socket;
+    socket = null;
+    connected = false;
+    myId = null;
+    if (old) { try { old.close(); } catch {} }
+    for (const id of [...remotes.keys()]) removeRemote(id);
+    clock.reset();
+    onStatus?.('connecting');
+    connect();
+    return true;
+  }
+
+  function disconnect() {
+    manualUrl = '';
+    try { localStorage.removeItem(LAN_HOST_KEY); } catch {}
+    clearTimeout(retryTimer);
+    retryTimer = 0;
+    const old = socket;
+    socket = null;
+    connected = false;
+    myId = null;
+    if (old) { try { old.close(); } catch {} }
+    for (const id of [...remotes.keys()]) removeRemote(id);
+  }
+
+  if (nativeApp) {
+    try { manualUrl = normalizeAddress(localStorage.getItem(LAN_HOST_KEY)); } catch {}
+  }
   connect();
 
   return {
+    isNative: nativeApp,
+    isConnected: () => connected,
+    connectTo,
+    disconnect,
     chat(text) {
       text = text.trim();
       if (!text) return;
@@ -312,6 +372,21 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
     setAvatar(id) {
       myAvatar = id;
       send({ type: 'avatar', avatar: id });
+    },
+    players() {
+      const list = [];
+      for (const r of remotes.values()) {
+        if (r.removed) continue;
+        list.push({
+          id: r.id,
+          name: r.playerName,
+          avatar: r.avatarId,
+          wins: r.wins,
+          rebirths: r.rebirths,
+          afk: r.afk,
+        });
+      }
+      return list.sort((a, b) => a.name.localeCompare(b.name));
     },
     update(dt) {
       if (connected && myId) {
