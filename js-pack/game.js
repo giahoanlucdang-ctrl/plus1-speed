@@ -22,6 +22,9 @@ import { footsteps, playSfx } from './sfx.js';
 import { addChatMessage, revealChatHistory } from './chat-history.js';
 import { checkForUpdate } from './updater.js';
 import { isLowGraphics, hasGraphicsPreference, setLowGraphics, renderPixelRatio } from './quality.js';
+import { claimDailyBonus } from './daily.js';
+import { checkAchievements, renderAchievements } from './achievements.js';
+import { showReward } from './reward-toast.js';
 
 await loadProgress();
 await startAuth();
@@ -30,9 +33,48 @@ const MOVE_SPEED = 6;
 const RUN_SPEED = 9;
 const H = 2;
 
-const canvas = document.getElementById('game');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: !isLowGraphics() });
-renderer.setPixelRatio(renderPixelRatio());
+let canvas = document.getElementById('game');
+
+// Old Android browsers often refuse the first WebGL2 request (MSAA and
+// low-memory allocations are common culprits). Retry with cheaper settings and
+// let three fall back to WebGL1 before giving up on the device.
+function createRenderer() {
+  const attempts = [
+    { antialias: !isLowGraphics() },
+    { antialias: false },
+    { antialias: false, powerPreference: 'low-power', alpha: false, depth: true, stencil: false, desynchronized: true },
+  ];
+  for (let i = 0; i < attempts.length; i += 1) {
+    if (i > 0) {
+      const replacement = canvas.cloneNode(false);
+      canvas.replaceWith(replacement);
+      canvas = replacement;
+    }
+    try {
+      return { renderer: new THREE.WebGLRenderer({ canvas, ...attempts[i] }), relaxed: i > 0 };
+    } catch {}
+  }
+  return null;
+}
+
+const created = createRenderer();
+if (!created) {
+  document.getElementById('loading-screen')?.remove();
+  const panel = document.getElementById('game-error');
+  if (panel) {
+    panel.textContent = 'Máy này không tạo được WebGL nên chưa chạy game được. Hãy cập nhật Android System WebView hoặc Chrome mới hơn rồi tải lại trang. (This device cannot create a WebGL context.)';
+    panel.hidden = false;
+  }
+  await new Promise(() => {});
+}
+const { renderer, relaxed } = created;
+// r152 still defaults to legacy light intensities; r169 (previous build) used
+// physically based ones, so keep the same look.
+renderer.useLegacyLights = false;
+// Old phones that only offer WebGL1 have weak GPUs; render at 1x and let the
+// FPS watchdog switch the rest of the scene to low graphics if it struggles.
+const webgl1 = !renderer.capabilities.isWebGL2;
+renderer.setPixelRatio(relaxed || webgl1 ? 1 : renderPixelRatio());
 renderer.shadowMap.enabled = false;
 
 const scene = new THREE.Scene();
@@ -185,6 +227,17 @@ function renderAvatarList(selected) {
 
 // Player position is the bottom-center of the body
 const player = createSim({ speed:progress.speed, wins:progress.wins, rebirths:progress.rebirths, walkTime:progress.walkTime, shopSpeed:progress.shopSpeed, avatar:progress.avatar, unlocked:progress.unlocked });
+const dailyBonus = claimDailyBonus(player);
+if (dailyBonus) {
+  const announceDaily = () => {
+    if (document.getElementById('loading-screen')) return setTimeout(announceDaily, 500);
+    showReward(
+      `Daily bonus · day ${dailyBonus.streak}`,
+      `+${dailyBonus.bonus} Win${dailyBonus.bonus === 1 ? '' : 's'}`,
+    );
+  };
+  setTimeout(announceDaily, 600);
+}
 // Mirror the visible World 1 floor directly into the player's collision index.
 addCourseCollider(player.course,
   { x: platform.min.x, y: platform.min.y, z: platform.min.z },
@@ -338,6 +391,7 @@ addEventListener('keydown', (event) => {
 const prediction = new Prediction(player);
 function syncPlayerProgress() {
   progress.speed = player.stats.speed;
+  if (progress.speed > progress.bestSpeed) progress.bestSpeed = progress.speed;
   progress.wins = player.stats.wins;
   progress.rebirths = player.stats.rebirths;
   progress.walkTime = player.stats.walkTime;
@@ -583,12 +637,61 @@ const rebirthsEl = document.getElementById('rebirths');
 const speedRateEl = document.getElementById('speed-rate');
 const playTimeEl = document.getElementById('play-time');
 const lbSpeed = document.getElementById('lb-speed');
-const lbWins = document.getElementById('lb-wins');
-const lbRebirths = document.getElementById('lb-rebirths');
+const lbTime = document.getElementById('lb-time');
+const lbStreak = document.getElementById('lb-streak');
 const leaderboardUi = document.getElementById('leaderboard-ui');
+const leaderboardRowsEl = document.getElementById('leaderboard-rows');
+
+const TITLES = [[10, 'Legend', 'legend'], [5, 'Rocket', ''], [3, 'Speedster', ''], [1, 'Racer', '']];
+const playerTitle = (rebirths) => {
+  const tier = TITLES.find(([needed]) => rebirths >= needed);
+  return tier ? [tier[1], tier[2]] : ['Rookie', ''];
+};
+
+function rankRow(entry, rank) {
+  const row = document.createElement('div');
+  row.className = entry.me ? 'rank-row you' : 'rank-row';
+  const place = document.createElement('span');
+  place.textContent = `#${rank}`;
+  const name = document.createElement('span');
+  name.className = 'rank-name';
+  name.append(entry.me ? `${entry.name} (you)` : entry.name);
+  const [title, titleClass] = playerTitle(entry.rebirths);
+  const titleEl = document.createElement('em');
+  titleEl.className = titleClass ? `rank-title ${titleClass}` : 'rank-title';
+  titleEl.textContent = title;
+  name.append(titleEl);
+  const wins = document.createElement('span');
+  wins.textContent = entry.wins;
+  const rebirths = document.createElement('span');
+  rebirths.textContent = entry.rebirths;
+  row.append(place, name, wins, rebirths);
+  return row;
+}
+
+function renderLeaderboard() {
+  const entries = [{
+    name: progress.nickname || 'You',
+    wins: progress.wins,
+    rebirths: progress.rebirths,
+    me: true,
+  }];
+  const seen = new Set([(progress.nickname || '').toLowerCase()]);
+  for (const p of net.players()) {
+    const key = p.name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    entries.push({ name: p.name, wins: p.wins, rebirths: p.rebirths, me: false });
+  }
+  entries.sort((a, b) => b.wins - a.wins || b.rebirths - a.rebirths || a.name.localeCompare(b.name));
+  leaderboardRowsEl.replaceChildren(...entries.map((entry, i) => rankRow(entry, i + 1)));
+}
+
 document.getElementById('leaderboard-btn').addEventListener('click', () => {
   document.getElementById('friends-ui').hidden = true;
   leaderboardUi.hidden = false;
+  renderLeaderboard();
+  renderAchievements();
 });
 document.getElementById('leaderboard-close').addEventListener('click', () => { leaderboardUi.hidden = true; });
 
@@ -694,16 +797,20 @@ function formatPlayTime(value) {
   const s = String(seconds % 60).padStart(2, '0');
   return `${h}:${m}:${s}`;
 }
-function updatePlayTime() { playTimeEl.textContent = `Play time ${formatPlayTime(progress.playTime)}`; }
+let achievementTimer = 0;
+function updatePlayTime() {
+  const formatted = formatPlayTime(progress.playTime);
+  playTimeEl.textContent = `Play time ${formatted}`;
+  lbTime.textContent = formatted;
+}
 let playTimeSaveTimer = 0;
 const showStats = () => {
   speedEl.textContent = progress.speed;
   speedRateEl.textContent = `${boosted(1 + progress.wins) + progress.shopSpeed}/s`;
   winsEl.textContent = progress.wins;
   rebirthsEl.textContent = progress.rebirths;
-  lbSpeed.textContent = progress.speed;
-  lbWins.textContent = progress.wins;
-  lbRebirths.textContent = progress.rebirths;
+  lbSpeed.textContent = progress.bestSpeed;
+  lbStreak.textContent = `${progress.dailyStreak} day${progress.dailyStreak === 1 ? '' : 's'}`;
   renderShopOffer();
   renderExchangeOffer();
   renderRebirth();
@@ -875,6 +982,12 @@ function draw(dt) {
   updatePlayTime();
   playTimeSaveTimer += dt;
   if (playTimeSaveTimer >= 1) { playTimeSaveTimer = 0; markDirty(); }
+  achievementTimer += dt;
+  if (achievementTimer >= 1) {
+    achievementTimer = 0;
+    checkAchievements();
+    if (!leaderboardUi.hidden) renderLeaderboard();
+  }
   const w = innerWidth, h = innerHeight;
   const ratio = renderPixelRatio();
   if (canvas.width !== Math.floor(w * ratio) || canvas.height !== Math.floor(h * ratio)) {

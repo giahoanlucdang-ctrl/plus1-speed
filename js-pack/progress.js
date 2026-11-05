@@ -31,6 +31,12 @@ export const progress = {
   passwordHash: typeof saved.passwordHash === 'string' ? saved.passwordHash : '',
   passwordSalt: typeof saved.passwordSalt === 'string' ? saved.passwordSalt : '',
   friends: normalizeFriends(saved.friends),
+  bestSpeed: Number.isFinite(saved.bestSpeed) && saved.bestSpeed >= 1 ? saved.bestSpeed : 1,
+  dailyStreak: Number.isSafeInteger(saved.dailyStreak) && saved.dailyStreak >= 0 ? saved.dailyStreak : 0,
+  dailyClaimedDay: typeof saved.dailyClaimedDay === 'string' ? saved.dailyClaimedDay.slice(0, 10) : '',
+  achievements: Array.isArray(saved.achievements)
+    ? [...new Set(saved.achievements.filter((id) => typeof id === 'string'))].slice(0, 64)
+    : [],
   savedAt: Number.isFinite(saved.savedAt) ? saved.savedAt : 0,
 };
 let privateSaveActive = false;
@@ -50,6 +56,12 @@ function applySavedProgress(data) {
   if (typeof data.passwordHash === 'string') progress.passwordHash = data.passwordHash;
   if (typeof data.passwordSalt === 'string') progress.passwordSalt = data.passwordSalt;
   if (Array.isArray(data.friends)) progress.friends = normalizeFriends(data.friends);
+  if (Number.isFinite(data.bestSpeed) && data.bestSpeed >= 1 && data.bestSpeed <= 1e12) progress.bestSpeed = data.bestSpeed;
+  if (Number.isSafeInteger(data.dailyStreak) && data.dailyStreak >= 0 && data.dailyStreak <= 3650) progress.dailyStreak = data.dailyStreak;
+  if (typeof data.dailyClaimedDay === 'string') progress.dailyClaimedDay = data.dailyClaimedDay.slice(0, 10);
+  if (Array.isArray(data.achievements)) {
+    progress.achievements = [...new Set(data.achievements.filter((id) => typeof id === 'string'))].slice(0, 64);
+  }
 }
 
 let cloudSaver = null;
@@ -66,6 +78,10 @@ export function progressSnapshot() {
     unlocked: [...progress.unlocked],
     nickname: progress.nickname,
     friends: [...progress.friends],
+    bestSpeed: progress.bestSpeed,
+    dailyStreak: progress.dailyStreak,
+    dailyClaimedDay: progress.dailyClaimedDay,
+    achievements: [...progress.achievements],
     savedAt: progress.savedAt,
   };
 }
@@ -83,6 +99,10 @@ export function resetProgressData() {
   progress.avatar = 'noob';
   progress.unlocked = [1];
   progress.friends = [];
+  progress.bestSpeed = 1;
+  progress.dailyStreak = 0;
+  progress.dailyClaimedDay = '';
+  progress.achievements = [];
   progress.savedAt = Date.now();
   dispatchEvent(new CustomEvent('progress:server'));
 }

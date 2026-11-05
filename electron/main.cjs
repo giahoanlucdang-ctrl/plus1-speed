@@ -6,6 +6,13 @@ const { startServer } = require('../serve-game.js');
 
 const ROOT = path.join(__dirname, '..');
 const UPDATE_INTERVAL = 4 * 60 * 60 * 1000;
+
+// An AppImage cannot keep the setuid bit on chrome-sandbox, and Linux Mint 22.x
+// (Ubuntu 24.04 base) blocks unprivileged user namespaces, so Electron 22 aborts
+// with "SUID sandbox helper binary was found, but is not configured correctly".
+if (process.platform === 'linux' && process.env.APPIMAGE) {
+  app.commandLine.appendSwitch('no-sandbox');
+}
 let gameServer = null;
 let mainWindow = null;
 
