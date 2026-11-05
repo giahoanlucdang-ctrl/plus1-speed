@@ -12,6 +12,7 @@ import { stick, jump } from './touch.js';
 import { buildDoor } from './door.js';
 import { buildWorld2 } from './world2.js';
 import { buildShop, buildExchangeShop, SHOP_X, SHOP_Z, EXCHANGE_SHOP_X, EXCHANGE_SHOP_Z } from './shop.js';
+import { buildChatZone, CHAT_ZONE } from './chat-zone.js';
 import { buildSpawnMarkers } from './spawn-marker.js';
 import { buildSpawnPlants } from './vegetation.js';
 import { buildSpeedEffects } from './speed-effects.js';
@@ -671,6 +672,9 @@ const mp = {
     net?.chat(text);
     return true;
   },
+  countNear(x, z, radius) {
+    return net?.countNear(x, z, radius) ?? 0;
+  },
   update(dt) {
     localBubble.update(dt);
     net?.update(dt);
@@ -718,6 +722,28 @@ chatEmojis?.addEventListener('click', (e) => {
   if (btn) mp.chat(btn.dataset.emoji);
 });
 chatInput.addEventListener('focus', () => keys.clear());
+
+// Chatting plaza on the starter meadow: cosmetic only, no colliders.
+const chatZone = buildChatZone(scene);
+const chatZoneBadge = document.getElementById('chat-zone-badge');
+let chatZoneInside = false;
+let chatZoneTick = 0;
+const CHAT_PLACEHOLDER = chatInput.placeholder;
+function updateChatZone(dt) {
+  chatZoneTick -= dt;
+  if (chatZoneTick > 0) return;
+  chatZoneTick = 0.4;
+  const inside = player.world === 1 && chatZone.contains(player.pos.x, player.pos.z);
+  if (inside !== chatZoneInside) {
+    chatZoneInside = inside;
+    chatZoneBadge.hidden = !inside;
+    document.body.classList.toggle('in-chat-zone', inside);
+    chatInput.placeholder = inside ? 'Say hi to everyone nearby…' : CHAT_PLACEHOLDER;
+  }
+  if (!inside) return;
+  const others = mp.countNear(CHAT_ZONE.x, CHAT_ZONE.z, CHAT_ZONE.r);
+  chatZoneBadge.textContent = others ? `CHATTING · ${others} here` : 'CHATTING AREA';
+}
 
 const speedEl = document.getElementById('speed');
 const winsEl = document.getElementById('wins');
@@ -1099,6 +1125,7 @@ function update(dt, now) {
   } else if (!exchangeShopDismissed) {
     exchangeShopUi.hidden = false;
   }
+  updateChatZone(dt);
   const stats = player.stats;
   if (stats.wins > progress.wins) {
     showWinToast();

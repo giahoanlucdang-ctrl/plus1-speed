@@ -398,6 +398,17 @@ export function initNetplay(scene, height, { getState, onSpawn, onChat, onStatus
       }
       return list.sort((a, b) => a.name.localeCompare(b.name));
     },
+    countNear(x, z, radius) {
+      let count = 0;
+      const limit = radius * radius;
+      for (const r of remotes.values()) {
+        if (r.removed || !r.group.visible) continue;
+        const dx = r.group.position.x - x;
+        const dz = r.group.position.z - z;
+        if (dx * dx + dz * dz <= limit) count += 1;
+      }
+      return count;
+    },
     update(dt) {
       if (connected && myId) {
         sendTimer -= dt;

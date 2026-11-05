@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { SHOP_X, SHOP_Z, FRONT_EDGE, WELCOME_RADIUS, EXCHANGE_SHOP_X, EXCHANGE_SHOP_Z, EXCHANGE_FRONT_EDGE, EXCHANGE_WELCOME_RADIUS } from './shop.js';
+import { CHAT_ZONE } from './chat-zone.js';
 
 const UP = new THREE.Vector3(0, 1, 0);
 
@@ -26,6 +27,7 @@ export function buildSpawnPlants(scene) {
       if (Math.abs(x - EXCHANGE_SHOP_X) < 4 && z > EXCHANGE_SHOP_Z - 1.4 && z < EXCHANGE_SHOP_Z + 0.575) continue;
       const exchangeDz = z - (EXCHANGE_SHOP_Z + EXCHANGE_FRONT_EDGE);
       if (exchangeDz >= 0 && (x - EXCHANGE_SHOP_X) ** 2 + exchangeDz ** 2 < EXCHANGE_WELCOME_RADIUS ** 2) continue;
+      if (Math.hypot(x - CHAT_ZONE.x, z - CHAT_ZONE.z) < CHAT_ZONE.r + 0.7) continue; // keep the chatting plaza clear
       if (spots.some(([px, pz]) => Math.hypot(px - x, pz - z) < minSpacing)) continue;
       spots.push([x, z, 0.7 + Math.random() * 0.55, Math.random() * Math.PI * 2]);
     }

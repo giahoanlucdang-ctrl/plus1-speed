@@ -14,6 +14,7 @@ Game 3D chạy trên nền web (Three.js): chạy liên tục để Speed tự t
 - **Leaderboard theo phòng**: xếp hạng mọi người đang online theo Wins, kèm danh hiệu theo số lần Rebirth (Racer → Speedster → Rocket → Legend).
 - **Chế độ đồ hoạ thấp** cho máy yếu, tự bật khi máy chỉ có ≤2 GB RAM / 2 nhân hoặc khi FPS trung bình dưới 35 trong 5 giây đầu.
 - **Bộ icon mới**: icon SVG trên các nút trong game.
+- **Khu chatting**: sân tròn có ghế và đèn trên đồng cỏ World 1, đứng vào là biết có bao nhiêu người đang ở đó.
 - **LAN multiplayer**: nhiều người chơi cùng wifi, chat, bubble chat, danh sách người chơi, báo người vào/rời phòng.
 - **Lưu tiến trình tự động** mỗi giây, kèm **Backup/Restore** ra file JSON.
 - **Tài khoản** (khi cấu hình Supabase): đăng nhập/đăng ký, quên mật khẩu bằng mã 6 số gửi qua Gmail, đổi mật khẩu, liên kết Google, xoá tài khoản, đồng bộ save lên cloud. Chưa cấu hình thì vẫn chơi offline bình thường.
@@ -120,6 +121,10 @@ git push origin v1.5.0
 GitHub Actions sẽ build Windows, Linux, Android rồi gắn file vào GitHub Release.
 
 ## Changelog
+
+### v1.8.0 (2026-11-05)
+- Khu **chatting** mới trên đồng cỏ World 1: sàn tròn, ghế ngồi, đèn, biển "CHATTING". Đứng trong khu sẽ thấy badge **CHATTING AREA** (kèm số người xung quanh) và ô chat đổi gợi ý.
+- Cỏ và hoa tự tránh khu chatting để sàn luôn trống.
 
 ### v1.7.0 (2026-11-05)
 - Mọi nút trong game có **icon** (SVG): Settings, Characters, Worlds, Leaderboard, Friends, LAN, Rebirth và toàn bộ mục trong Settings (nhạc, hiệu ứng, đồ hoạ, FPS, camera, invite, backup…).

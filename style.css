@@ -437,6 +437,16 @@ body.touch #play-time { bottom: 176px; }
   text-shadow: 0 1px 5px #0008; box-shadow: 0 6px 22px #102b4650, inset 0 1px #ffffff40;
   backdrop-filter: blur(8px); pointer-events: none;
 }
+#chat-zone-badge {
+  position: fixed; top: 74px; left: 50%; transform: translateX(-50%); z-index: 5;
+  padding: 9px 16px; border: 1px solid #ffe27a80; border-radius: 999px;
+  background: linear-gradient(110deg, #2a210ee8, #3d3218b8);
+  color: #ffe27a; font: 850 11px/1 system-ui, sans-serif; letter-spacing: .13em;
+  text-shadow: 0 1px 5px #0008; box-shadow: 0 6px 22px #102b4650, inset 0 1px #ffe27a40;
+  backdrop-filter: blur(8px); pointer-events: none;
+}
+#chat-zone-badge[hidden] { display: none; }
+body.in-chat-zone #chat-input { border-color: #ffe27a99; box-shadow: 0 0 0 2px #ffe27a33; }
 
 #settings-ui {
   position: fixed; inset: 0; z-index: 32; display: grid; place-items: center;
