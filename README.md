@@ -52,7 +52,7 @@ Bản Android hiện chỉ chơi đơn (chưa có server LAN đi kèm), nhưng c
 **Cách 1 — file `.deb` (khuyên dùng):**
 
 ```bash
-sudo apt install ./Plus1Speed-1.4.0-amd64.deb
+sudo apt install ./Plus1Speed-<version>-amd64.deb
 plus1-speed            # hoặc mở "+1 Speed" trong menu Game
 ```
 
@@ -62,20 +62,20 @@ Gỡ ra: `sudo apt remove plus1-speed`.
 
 ```bash
 sudo apt install libfuse2t64     # Mint 22.x đổi tên từ libfuse2
-chmod +x Plus1Speed-1.4.0-x86_64.AppImage
-./Plus1Speed-1.4.0-x86_64.AppImage
+chmod +x Plus1Speed-<version>-x86_64.AppImage
+./Plus1Speed-<version>-x86_64.AppImage
 ```
 
 Nếu AppImage báo `SUID sandbox helper binary was found` hoặc thoát ngay, chạy kèm cờ:
 
 ```bash
-./Plus1Speed-1.4.0-x86_64.AppImage --no-sandbox
+./Plus1Speed-<version>-x86_64.AppImage --no-sandbox
 ```
 
 Bản AppImage tự thêm cờ này khi khởi động (Mint 22.x chặn user-namespace nên sandbox của Electron 22 không chạy được), nhưng nếu máy vẫn báo lỗi thì dùng lệnh trên. Máy không có `libfuse2t64` cũng có thể chạy:
 
 ```bash
-./Plus1Speed-1.4.0-x86_64.AppImage --appimage-extract-and-run --no-sandbox
+./Plus1Speed-<version>-x86_64.AppImage --appimage-extract-and-run --no-sandbox
 ```
 
 Game cần GTK3 + trình điều khiển GL; XFCE mặc định có sẵn. Nếu màn hình chỉ hiện "Máy này không tạo được WebGL", cài driver Mesa: `sudo apt install mesa-utils` rồi chạy `glxinfo -B` để kiểm tra.
@@ -112,13 +112,20 @@ Bản Android cần Android SDK + Java 17 để build bằng Gradle trong thư m
 Workflow `.github/workflows/release.yml` tự build cả 3 nền tảng khi đẩy tag:
 
 ```bash
-git tag v1.4.0
-git push origin v1.4.0
+git tag v1.5.0
+git push origin v1.5.0
 ```
 
 GitHub Actions sẽ build Windows, Linux, Android rồi gắn file vào GitHub Release.
 
 ## Changelog
+
+### v1.5.0 (2026-11-05)
+- Settings có thêm thanh chỉnh âm lượng hiệu ứng (tiếng bước chân, nhảy, win, rebirth), tách riêng với âm lượng nhạc.
+- Nút **Random** trong bảng Characters để đổi nhân vật ngẫu nhiên.
+- Thông báo **New best speed** khi lần đầu phá kỷ lục Speed trong phiên chơi.
+- Sửa lỗi âm lượng nhạc và hiệu ứng bị đặt về 0 với người chơi mới (chưa từng lưu cài đặt).
+- Sửa lỗi nhân vật vừa chọn bị đổi ngược lại sau vài giây.
 
 ### v1.4.0 (2026-11-05)
 - Chạy được trên máy chỉ có WebGL 1 (điện thoại Android cũ như Oppo Neo 7s): hạ Three.js xuống r152.2, tạo renderer với nhiều mức cấu hình, báo lỗi rõ ràng nếu máy không có WebGL.

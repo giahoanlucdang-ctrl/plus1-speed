@@ -7,7 +7,8 @@ let enabled = true;
 let level = 50;
 try {
   enabled = localStorage.getItem('music-muted') !== 'true';
-  const stored = Number(localStorage.getItem('music-volume'));
+  const raw = localStorage.getItem('music-volume');
+  const stored = raw === null ? NaN : Number(raw);
   if (Number.isFinite(stored)) level = Math.max(0, Math.min(100, stored));
 } catch {}
 music.muted = !enabled;

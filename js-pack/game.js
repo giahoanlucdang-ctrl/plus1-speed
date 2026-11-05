@@ -187,6 +187,9 @@ async function selectAvatar(id) {
     progress.avatar = id;
     markDirty();
   }
+  // Keep the sim's copy in step, otherwise the per-second progress sync writes
+  // the old avatar back over the player's fresh pick.
+  player.stats.avatar = id;
   renderAvatarList(id);
   mp.setAvatar(id);
   if (avatarId === id) return;
@@ -212,6 +215,16 @@ avatarBtn.addEventListener('click', () => {
   avatarBtn.blur();
 });
 function renderAvatarList(selected) {
+  const random = document.createElement('button');
+  random.textContent = 'Random';
+  random.dataset.random = 'true';
+  random.addEventListener('click', () => {
+    const options = AVATARS.filter((a) => a.id !== avatarId);
+    const pick = options[Math.floor(Math.random() * options.length)] ?? AVATARS[0];
+    selectAvatar(pick.id);
+    avatarList.hidden = true;
+    random.blur();
+  });
   avatarList.replaceChildren(...AVATARS.map((a) => {
     const b = document.createElement('button');
     b.textContent = a.name;
@@ -222,11 +235,15 @@ function renderAvatarList(selected) {
       b.blur();
     });
     return b;
-  }));
+  }), random);
 }
 
 // Player position is the bottom-center of the body
 const player = createSim({ speed:progress.speed, wins:progress.wins, rebirths:progress.rebirths, walkTime:progress.walkTime, shopSpeed:progress.shopSpeed, avatar:progress.avatar, unlocked:progress.unlocked });
+// Personal best is captured once so the toast only fires the first time this
+// session's speed passes the record the player started with.
+const bestAtStart = progress.bestSpeed;
+let bestNotified = bestAtStart < 100;
 const dailyBonus = claimDailyBonus(player);
 if (dailyBonus) {
   const announceDaily = () => {
@@ -389,14 +406,27 @@ addEventListener('keydown', (event) => {
   }
 });
 const prediction = new Prediction(player);
+function showRewardWhenReady(title, detail) {
+  if (document.getElementById('loading-screen')) {
+    setTimeout(() => showRewardWhenReady(title, detail), 500);
+    return;
+  }
+  showReward(title, detail);
+}
+
 function syncPlayerProgress() {
   progress.speed = player.stats.speed;
-  if (progress.speed > progress.bestSpeed) progress.bestSpeed = progress.speed;
+  if (progress.speed > progress.bestSpeed) {
+    progress.bestSpeed = progress.speed;
+    if (!bestNotified) {
+      bestNotified = true;
+      showRewardWhenReady('New best speed', `${Math.round(progress.speed).toLocaleString()} speed`);
+    }
+  }
   progress.wins = player.stats.wins;
   progress.rebirths = player.stats.rebirths;
   progress.walkTime = player.stats.walkTime;
   progress.shopSpeed = player.stats.shopSpeed ?? 0;
-  progress.avatar = player.stats.avatar;
 }
 const exchangeWinsInput = document.getElementById('exchange-wins-input');
 const exchangeBalance = document.getElementById('exchange-balance');
