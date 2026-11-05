@@ -26,7 +26,7 @@ export const progress = {
   walkTime: Number.isFinite(saved.walkTime) ? saved.walkTime : 0,
   playTime: Number.isFinite(saved.playTime) && saved.playTime >= 0 ? saved.playTime : 0,
   avatar: typeof saved.avatar === 'string' ? saved.avatar : 'noob',
-  unlocked: Array.isArray(saved.unlocked) ? [...new Set([1, ...saved.unlocked.filter((w) => [2, 3, 4].includes(w))])] : [1],
+  unlocked: Array.isArray(saved.unlocked) ? [...new Set([1, ...saved.unlocked.filter((w) => [2, 3, 4, 5].includes(w))])] : [1],
   nickname: typeof saved.nickname === 'string' ? saved.nickname.slice(0, 20) : '',
   passwordHash: typeof saved.passwordHash === 'string' ? saved.passwordHash : '',
   passwordSalt: typeof saved.passwordSalt === 'string' ? saved.passwordSalt : '',
@@ -55,7 +55,7 @@ function applySavedProgress(data) {
   if (Number.isFinite(data.walkTime) && data.walkTime >= 0 && data.walkTime < 1) progress.walkTime = data.walkTime;
   if (Number.isFinite(data.playTime) && data.playTime >= 0) progress.playTime = data.playTime;
   if (typeof data.avatar === 'string') progress.avatar = data.avatar;
-  if (Array.isArray(data.unlocked)) progress.unlocked = [...new Set([1, ...data.unlocked.filter((w) => [2, 3, 4].includes(w))])];
+  if (Array.isArray(data.unlocked)) progress.unlocked = [...new Set([1, ...data.unlocked.filter((w) => [2, 3, 4, 5].includes(w))])];
   if (typeof data.nickname === 'string') progress.nickname = data.nickname.slice(0, 20);
   if (typeof data.passwordHash === 'string') progress.passwordHash = data.passwordHash;
   if (typeof data.passwordSalt === 'string') progress.passwordSalt = data.passwordSalt;

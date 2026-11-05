@@ -1,16 +1,16 @@
 # +1 Speed
 
-Game 3D chạy trên nền web (Three.js): chạy liên tục để Speed tự tăng **+1 mỗi giây**, né chướng ngại vật, mua 4 thế giới bằng Wins, rebirth để tăng tốc độ kiếm điểm và chơi LAN nhiều người.
+Game 3D chạy trên nền web (Three.js): chạy liên tục để Speed tự tăng **+1 mỗi giây**, né chướng ngại vật, mua 5 thế giới bằng Wins, rebirth để tăng tốc độ kiếm điểm và chơi LAN nhiều người.
 
 ![Gameplay](readme-assets/01-game.png)
 
 ## Tính năng
 
-- **4 thế giới**: Starter Meadow (mặc định), Moon Run (10 Wins), Crystal Sky (30 Wins), Sunset Isles (50 Wins) — mỗi world có đường đua và obby riêng.
+- **5 thế giới**: Starter Meadow (mặc định), Moon Run (10 Wins), Crystal Sky (30 Wins), Sunset Isles (50 Wins), Aurora Peaks (100 Wins) — mỗi world có đường đua và obby riêng.
 - **Speed tự tăng**: cứ mỗi giây sống sót là Speed +1 (tăng theo Wins và Rebirths); hết Speed khi va chướng ngại vật thì hồi sinh tại spawn.
 - **Exchange Wins to Speed**, shop phụ kiện, bảng Characters, Leaderboard và Rebirth.
 - **Điểm danh hằng ngày**: mỗi ngày vào game lần đầu được +Wins, chuỗi ngày liên tiếp tăng dần (tối đa +5 Wins/ngày, nghỉ 1 ngày là mất chuỗi).
-- **19 thành tích (milestones)**: mốc Wins, Speed, Rebirth, mở world, kết bạn, quãng đường, số lần nhảy/ngã… — mở khoá vĩnh viễn, xem trong bảng Leaderboard.
+- **20 thành tích (milestones)**: mốc Wins, Speed, Rebirth, mở world, kết bạn, quãng đường, số lần nhảy/ngã… — mở khoá vĩnh viễn, xem trong bảng Leaderboard.
 - **Leaderboard theo phòng**: xếp hạng mọi người đang online theo Wins, kèm danh hiệu theo số lần Rebirth (Racer → Speedster → Rocket → Legend).
 - **Chế độ đồ hoạ thấp** cho máy yếu, tự bật khi máy chỉ có ≤2 GB RAM / 2 nhân hoặc khi FPS trung bình dưới 35 trong 5 giây đầu.
 - **Bộ icon mới**: icon SVG trên các nút trong game.
@@ -121,6 +121,11 @@ git push origin v1.5.0
 GitHub Actions sẽ build Windows, Linux, Android rồi gắn file vào GitHub Release.
 
 ## Changelog
+
+### v2.1.0 (2026-11-05)
+- **World 05 · Aurora Peaks** (100 Wins): bốn đường obby mới khó hơn, trời đêm có cực quang, trụ băng phát sáng và cổng nối tiếp từ Sunset Isles.
+- **Chế độ ảnh (Photo mode)**: bấm **P** hoặc nút **Photo** để ẩn toàn bộ HUD, **Enter** để lưu ảnh PNG, **Esc** để thoát.
+- Thêm thành tích **Northern Lights** (mở World 05); Globetrotter giờ tính cả 5 world.
 
 ### v1.8.0 (2026-11-05)
 - Khu **chatting** mới trên đồng cỏ World 1: sàn tròn, ghế ngồi, đèn, biển "CHATTING". Đứng trong khu sẽ thấy badge **CHATTING AREA** (kèm số người xung quanh) và ô chat đổi gợi ý.

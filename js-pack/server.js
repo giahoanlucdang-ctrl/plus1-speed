@@ -24,7 +24,7 @@ export const schema = `
 `;
 const AVATAR_IDS = ['noob','robot','mario','clark','spongebob','baldi','pete'];
 // Worlds are bought once with Wins and stay open across rebirths.
-export const WORLD_COSTS = { 1: 0, 2: 10, 3: 30, 4: 50 };
+export const WORLD_COSTS = { 1: 0, 2: 10, 3: 30, 4: 50, 5: 100 };
 const defaults = () => ({ speed:1, wins:0, rebirths:0, walkTime:0, shopSpeed:0, avatar:'noob', unlocked:[1] });
 const publicStats = s => ({speed:s.speed,wins:s.wins,rebirths:s.rebirths,walkTime:s.walkTime,shopSpeed:s.shopSpeed??0,avatar:s.avatar,unlocked:Array.isArray(s.unlocked)?[...s.unlocked]:[1]});
 const fromRow = r => r ? ({ speed:r.speed,wins:r.wins,rebirths:r.rebirths,walkTime:r.walk_time,avatar:AVATAR_IDS.includes(r.avatar)?r.avatar:'noob',unlocked:[1] }) : defaults();
@@ -34,6 +34,7 @@ export const DOOR = { half: 2 };
 export const WORLD2 = { x: 2000 };
 export const WORLD3 = { x: 4000 };
 export const WORLD4 = { x: 6000 };
+export const WORLD5 = { x: 8000 };
 export const WORLD3_TRACKS = [
   { type: 'run', label: 'Crystal Run', x: -11.5, dir: -1, width: 3.8, sections: [7, 8, 9, 10], gap: 2.5, goalLength: 7, wins: 3 },
   { type: 'plates', label: 'Prism Plates', x: 11.5, dir: -1, width: 3.5, count: 16, plateLength: 2.4, gap: 1.9, goalLength: 7, wins: 4 },
@@ -45,6 +46,12 @@ export const WORLD4_TRACKS = [
   { type: 'plates', label: 'Ember Plates', x: 11.5, dir: -1, width: 3, count: 20, plateLength: 1.65, gap: 2.2, goalLength: 6, wins: 6 },
   { type: 'jumps', label: 'Lava Leaps', x: -11.5, dir: 1, width: 2.8, count: 13, plateLength: 3.4, gapStart: 2.2, gapStep: 0.3, goalLength: 5, wins: 8 },
   { type: 'stairs', label: 'Ash Climb', x: 11.5, dir: 1, width: 3, count: 18, sectionLength: 3.3, rise: 0.62, goalLength: 6, wins: 7 },
+];
+export const WORLD5_TRACKS = [
+  { type: 'run', label: 'Aurora Run', x: -11.5, dir: -1, width: 2.9, sections: [6, 6, 7, 8, 9], gap: 3.2, goalLength: 6, wins: 9 },
+  { type: 'plates', label: 'Frost Plates', x: 11.5, dir: -1, width: 2.7, count: 22, plateLength: 1.5, gap: 2.3, goalLength: 6, wins: 10 },
+  { type: 'jumps', label: 'Glacier Leaps', x: -11.5, dir: 1, width: 2.6, count: 14, plateLength: 3.2, gapStart: 2.3, gapStep: 0.32, goalLength: 5, wins: 12 },
+  { type: 'stairs', label: 'Summit Climb', x: 11.5, dir: 1, width: 2.9, count: 20, sectionLength: 3.1, rise: 0.66, goalLength: 6, wins: 11 },
 ];
 // Kept as an alias for any older map code that still expects the former set.
 export const EXTRA_TRACKS = WORLD3_TRACKS;
@@ -80,7 +87,7 @@ export function hillLayout() {
   }
   return { hills, end: z - HILLS.gap };
 }
-const SPAWNS = { 1: { x: 0, z: 0 }, 2: { x: WORLD2.x, z: 0 }, 3: { x: WORLD3.x, z: 0 }, 4: { x: WORLD4.x, z: 0 } };
+const SPAWNS = { 1: { x: 0, z: 0 }, 2: { x: WORLD2.x, z: 0 }, 3: { x: WORLD3.x, z: 0 }, 4: { x: WORLD4.x, z: 0 }, 5: { x: WORLD5.x, z: 0 } };
 const gain = (s, amount) => Math.ceil(amount * (10 + s.rebirths) / 10);
 
 export default {
@@ -151,7 +158,7 @@ export function makeCourse() {
   const x0=WORLD2.x-15,x1=WORLD2.x+15;
   baseplate(WORLD2.x);
   // Worlds 3 and 4 use the same spawn-base footprint and four-lane layout as World 1.
-  for (const [world, tracks] of [[WORLD3, WORLD3_TRACKS], [WORLD4, WORLD4_TRACKS]]) {
+  for (const [world, tracks] of [[WORLD3, WORLD3_TRACKS], [WORLD4, WORLD4_TRACKS], [WORLD5, WORLD5_TRACKS]]) {
     baseplate(world.x, -7.5, 7.5, world.x - 30, world.x + 15);
     for (const track of tracks) {
       let length = 0;
@@ -167,9 +174,10 @@ export function makeCourse() {
   wall(x0-1,x0,-8.5,-DOOR.half);wall(x0-1,x0,DOOR.half,8.5);
   wall(x1,x1+1,-8.5,-DOOR.half);wall(x1,x1+1,DOOR.half,8.5);
   gate(x1,x1+1,2);
-  // Worlds 3 and 4 chain on from world 2: their forward door is gated like world 1's.
+  // Worlds 3, 4 and 5 chain on from world 2: their forward door is gated like world 1's.
   gate(WORLD3.x+15,WORLD3.x+16,3);
-  wall(WORLD4.x+15,WORLD4.x+16,-8.5,8.5);
+  gate(WORLD4.x+15,WORLD4.x+16,5);
+  wall(WORLD5.x+15,WORLD5.x+16,-8.5,8.5);
   wall(x0,HILLS.x-HILLS.width/2,-8.5,-7.5);wall(HILLS.x+HILLS.width/2,MOVER.x-MOVER.width/2,-8.5,-7.5);wall(MOVER.x+MOVER.width/2,x1,-8.5,-7.5);wall(x0,x1,7.5,8.5);
   const hx0=HILLS.x-HILLS.width/2,hx1=HILLS.x+HILLS.width/2,layout=hillLayout();
   box(hx0,hx1,-7.5,layout.end);
@@ -222,7 +230,7 @@ export function resetSim(s) {
   Object.assign(s.pos,{x:spawn.x,y:0,z:spawn.z});Object.assign(s.vel,{x:0,y:0,z:0});s.grounded=false;s.floor=null;s.ramp=null;s.coyote=0;s.jumpBuffer=0;s.dead=0;s.n++;
 }
 export function teleportToWorld(s, world) {
-  if (![1, 2, 3, 4].includes(world) || world === s.world) return false;
+  if (![1, 2, 3, 4, 5].includes(world) || world === s.world) return false;
   s.world = world;
   resetSim(s);
   return true;
@@ -242,7 +250,7 @@ export function restoreSim(s,state) {
     !state.ball || !Object.values(state.ball).every(v=>typeof v==='boolean'||Number.isFinite(v)))return false;
   [s.pos.x,s.pos.y,s.pos.z]=state.p;[s.vel.x,s.vel.y,s.vel.z]=state.vel;
   s.grounded=!!state.g;s.floor=s.course.boxes[state.f]??null;s.ramp=s.course.ramps[state.ramp]??null;
-  s.coyote=finite(state.c);s.jumpBuffer=finite(state.jb);s.dead=finite(state.d);s.n=count(state.n);s.world=[1,2,3,4].includes(state.w)?state.w:1;s.time=state.time;
+  s.coyote=finite(state.c);s.jumpBuffer=finite(state.jb);s.dead=finite(state.d);s.n=count(state.n);s.world=[1,2,3,4,5].includes(state.w)?state.w:1;s.time=state.time;
   s.stats={...state.stats};
   Object.assign(s.course.ball,state.ball);
   if(typeof state.beam?.on==='boolean'&&Number.isFinite(state.beam.t))Object.assign(s.course.beam,state.beam);
@@ -323,7 +331,7 @@ export function stepSim(s,dt) {
   s.time+=dt;obstacles(s,dt);
   if(s.dead>0){s.dead-=dt;if(s.dead<=0)resetSim(s);return;}
   const p=s.pos,v=s.vel,i=s.input,oldX=p.x,oldZ=p.z;
-  const unlocked=Array.isArray(s.stats.unlocked)?s.stats.unlocked:[1,2,3,4];
+  const unlocked=Array.isArray(s.stats.unlocked)?s.stats.unlocked:[1,2,3,4,5];
   s.course.door.off=unlocked.includes(2);
   for(const d of s.course.chainDoors)d.off=unlocked.includes(d.world);
   const zone=s.course.zones.some(b=>p.x>=b.min.x&&p.x<=b.max.x&&p.z>=b.min.z&&p.z<=b.max.z&&p.y>=b.max.y-.1&&p.y<=b.max.y+2.5);
@@ -374,11 +382,13 @@ export function stepSim(s,dt) {
   // The return doorway sits in the west wall of world 2. Trigger at the
   // inside edge so the player's collision radius cannot strand them there.
   if(s.world===2&&p.x<=WORLD2.x-14.5&&p.x>WORLD2.x-17&&Math.abs(p.z)<DOOR.half+0.5){s.world=1;resetSim(s);return;}
-  // The chain runs 1 -> 2 -> 3 -> 4 and back again.
+  // The chain runs 1 -> 2 -> 3 -> 4 -> 5 and back again.
   if(s.world===2&&p.x>=WORLD2.x+15.2&&p.x<WORLD2.x+17&&Math.abs(p.z)<DOOR.half){s.world=3;resetSim(s);return;}
   if(s.world===3&&p.x>=WORLD3.x+15.2&&p.x<WORLD3.x+17&&Math.abs(p.z)<DOOR.half){s.world=4;resetSim(s);return;}
   if(s.world===3&&p.x<=WORLD3.x-29.5&&p.x>WORLD3.x-32&&Math.abs(p.z)<DOOR.half+0.5){s.world=2;resetSim(s);return;}
   if(s.world===4&&p.x<=WORLD4.x-29.5&&p.x>WORLD4.x-32&&Math.abs(p.z)<DOOR.half+0.5){s.world=3;resetSim(s);return;}
+  if(s.world===4&&p.x>=WORLD4.x+15.2&&p.x<WORLD4.x+17&&Math.abs(p.z)<DOOR.half){s.world=5;resetSim(s);return;}
+  if(s.world===5&&p.x<=WORLD5.x-29.5&&p.x>WORLD5.x-32&&Math.abs(p.z)<DOOR.half+0.5){s.world=4;resetSim(s);return;}
   for(const g of s.course.goals){
     if(Math.hypot(p.x-g.x,p.z-g.z)<1.2&&Math.abs(p.y-g.y)<1){
       s.stats.wins=Math.min(1e12,s.stats.wins+gain(s.stats,g.wins));s.stats.speed=1;s.stats.walkTime=0;resetSim(s);break;

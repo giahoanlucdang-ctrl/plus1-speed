@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { WORLD3_TRACKS, WORLD4_TRACKS, WORLD3, WORLD4, DOOR } from './server.js';
+import { WORLD3_TRACKS, WORLD4_TRACKS, WORLD5_TRACKS, WORLD3, WORLD4, WORLD5, DOOR } from './server.js';
 import { buildDoor } from './door.js';
 
 const makeBox = (x0, x1, y0, y1, z0, z1) => ({
@@ -26,6 +26,50 @@ function makeSky(top, middle, bottom, stars = false) {
       ctx.fillStyle = `rgba(235,245,255,${0.25 + Math.random() * 0.7})`;
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
     }
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.mapping = THREE.EquirectangularReflectionMapping;
+  return texture;
+}
+
+// Night sky with soft aurora ribbons: painted once, cheap on weak GPUs.
+function makeAuroraSky() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0, '#051523');
+  gradient.addColorStop(0.5, '#0e3144');
+  gradient.addColorStop(1, '#123340');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < 500; i++) {
+    ctx.fillStyle = `rgba(230,250,255,${0.2 + Math.random() * 0.7})`;
+    ctx.beginPath();
+    ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height * 0.7, 0.5 + Math.random(), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const ribbons = [
+    { y: 104, h: 84, color: 'rgba(94,255,196,0.48)' },
+    { y: 152, h: 70, color: 'rgba(120,180,255,0.40)' },
+    { y: 198, h: 56, color: 'rgba(226,130,255,0.32)' },
+    { y: 238, h: 40, color: 'rgba(94,255,196,0.24)' },
+  ];
+  for (const ribbon of ribbons) {
+    ctx.fillStyle = ribbon.color;
+    ctx.beginPath();
+    ctx.moveTo(0, ribbon.y);
+    for (let x = 0; x <= canvas.width; x += 32) {
+      ctx.lineTo(x, ribbon.y + Math.sin(x / 90) * 26 + Math.sin(x / 37) * 9);
+    }
+    ctx.lineTo(canvas.width, ribbon.y + ribbon.h);
+    for (let x = canvas.width; x >= 0; x -= 32) {
+      ctx.lineTo(x, ribbon.y + ribbon.h + Math.sin(x / 90) * 26 + Math.sin(x / 37) * 9);
+    }
+    ctx.closePath();
+    ctx.fill();
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -90,6 +134,14 @@ const MAP_STYLES = {
     jumps: ['#d5753d', '#edb64f', '#c75439', '#e8a14e'],
     stairs: ['#9e503a', '#c06b3c', '#d18242', '#e0a34d'],
     glow: '#ffe9ad',
+  },
+  aurora: {
+    floor: '#22384f', trim: '#8bffe0', sign: '#dbfff4',
+    run: ['#2f6d8a', '#3d8f9c', '#2b5f7a', '#4aa9a0'],
+    plates: ['#3a7f9e', '#57b3a8', '#2c6a94', '#6fd4bd'],
+    jumps: ['#3b8ca6', '#76e0c8', '#2f7490', '#58b3c4'],
+    stairs: ['#2e5a78', '#3b7a92', '#4c9aa8', '#63c2b4'],
+    glow: '#b6fff0',
   },
 };
 
@@ -326,11 +378,42 @@ function buildSunsetDecor(root, effects) {
   effects.push({ type: 'halo', object: halo });
 }
 
+function buildAuroraDecor(root, style) {
+  const ice = new THREE.MeshStandardMaterial({ color: '#a8e6ff', emissive: '#2fb8a0', emissiveIntensity: 0.9, roughness: 0.18, metalness: 0.25 });
+  const heights = [5.2, 7.4, 4.6, 8.2, 6.1, 5.6, 7.8, 4.9, 6.8, 5.4, 7.1];
+  for (let row = 0; row < heights.length; row++) {
+    const z = -62 + row * 12.4;
+    const x = 23 + (row % 2) * 3;
+    const h = heights[row];
+    for (const side of [-1, 1]) {
+      const spire = new THREE.Mesh(new THREE.ConeGeometry(0.7 + (row % 3) * 0.22, h, 6), ice);
+      spire.position.set(side * x, h / 2 - 0.05, z);
+      spire.rotation.y = row * 0.5 + side * 0.2;
+      spire.rotation.z = side * 0.06;
+      spire.castShadow = true;
+      root.add(spire);
+    }
+  }
+  const ribbon = new THREE.Mesh(
+    new THREE.TorusGeometry(26, 0.5, 6, 60, Math.PI),
+    new THREE.MeshBasicMaterial({ color: style.glow, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  ribbon.position.set(0, 26, -70);
+  ribbon.rotation.x = Math.PI * 0.15;
+  root.add(ribbon);
+}
+
+const THEME_DOORS = {
+  crystal: { west: 2, east: 4 },
+  sunset: { west: 3, east: 5 },
+  aurora: { west: 4, east: null },
+};
+
 function buildMap(scene, center, style, theme, tracks, colliders, staticSolids, effects, doors) {
-  const { root, spawn } = buildBase(scene, center, style, colliders, staticSolids, doors,
-    { west: theme === 'crystal' ? 2 : 3, east: theme === 'crystal' ? 4 : null });
+  const { root, spawn } = buildBase(scene, center, style, colliders, staticSolids, doors, THEME_DOORS[theme]);
   tracks.forEach((track) => buildLane(root, center, track, style, colliders, staticSolids, effects));
   if (theme === 'crystal') buildCrystalDecor(root, style);
+  else if (theme === 'aurora') buildAuroraDecor(root, style);
   else buildSunsetDecor(root, effects);
   effects.push({ type: 'spawn', object: spawn });
 }
@@ -342,14 +425,17 @@ export function buildExtraWorlds(scene) {
   const doors = [];
   buildMap(scene, WORLD3.x, MAP_STYLES.crystal, 'crystal', WORLD3_TRACKS, solids, staticSolids, effects, doors);
   buildMap(scene, WORLD4.x, MAP_STYLES.sunset, 'sunset', WORLD4_TRACKS, solids, staticSolids, effects, doors);
+  buildMap(scene, WORLD5.x, MAP_STYLES.aurora, 'aurora', WORLD5_TRACKS, solids, staticSolids, effects, doors);
   const sky3 = makeSky('#09071d', '#32145d', '#100d25', true);
   const sky4 = makeSky('#391c43', '#dc7956', '#f5c078');
+  const sky5 = makeAuroraSky();
   let time = 0;
   return {
     solids,
     staticSolids,
     sky3,
     sky4,
+    sky5,
     update(dt, unlocked = [1]) {
       time += dt;
       for (const door of doors) door(unlocked);

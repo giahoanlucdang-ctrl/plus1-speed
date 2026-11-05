@@ -295,6 +295,8 @@ canvas:active {
 .world-choice.moon::before { background: radial-gradient(at 77% 18%, #c8eaff, transparent 24%), linear-gradient(130deg, #111a43, #414888 55%, #814f94); }
 .world-choice.crystal::before { background: radial-gradient(at 76% 10%, #ffadff, transparent 28%), linear-gradient(130deg, #321b70, #653cbb 55%, #188a9d); }
 .world-choice.sunset::before { background: radial-gradient(at 76% 15%, #fff0a6, transparent 26%), linear-gradient(130deg, #843d50, #e57b4a 55%, #f3bd69); }
+.world-choice.aurora::before { background: radial-gradient(at 74% 12%, #9dffd9, transparent 26%), linear-gradient(130deg, #0a2a3d, #2c7f8c 52%, #5a4aa8); }
+.world-choice.wide { grid-column: 1 / -1; }
 @media (max-width: 520px) {
   .world-picker-card { padding: 24px 18px 18px; }
   .world-grid { gap: 8px; }
@@ -447,6 +449,31 @@ body.touch #play-time { bottom: 176px; }
 }
 #chat-zone-badge[hidden] { display: none; }
 body.in-chat-zone #chat-input { border-color: #ffe27a99; box-shadow: 0 0 0 2px #ffe27a33; }
+#photo-hint {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 40;
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 16px;
+  border: 1px solid #ffffff55; border-radius: 999px; background: #0d1926e0;
+  color: #fff; font: 800 11px/1 system-ui, sans-serif; letter-spacing: .12em;
+  box-shadow: 0 10px 30px #0007; backdrop-filter: blur(8px);
+}
+#photo-hint[hidden] { display: none; }
+#photo-hint span { margin-right: 4px; color: #9fe8ff; }
+#photo-hint button {
+  padding: 8px 12px; border: 0; border-radius: 999px; background: #4f83e8; color: #fff;
+  font: 800 11px/1 system-ui, sans-serif; letter-spacing: .08em; cursor: pointer;
+}
+#photo-hint #photo-exit { background: #ffffff1f; }
+body.photo-mode #stats,
+body.photo-mode #world-indicator,
+body.photo-mode #chat-zone-badge,
+body.photo-mode #room-count,
+body.photo-mode #fps-counter,
+body.photo-mode #play-time,
+body.photo-mode #chat-dock,
+body.photo-mode #avatar-menu,
+body.photo-mode #joystick,
+body.photo-mode #jump-btn,
+body.photo-mode #update-banner { display: none !important; }
 
 #settings-ui {
   position: fixed; inset: 0; z-index: 32; display: grid; place-items: center;
@@ -1030,13 +1057,13 @@ body.reduce-motion #win-toast.show { animation: none; }
 }
 
 /* UI button icons (v1.7.0). Remove this block to go back to text-only buttons. */
-#settings-btn, #avatar-btn, #worlds-btn, #leaderboard-btn, #friends-btn, #lan-btn, #rebirth-btn,
+#settings-btn, #avatar-btn, #worlds-btn, #leaderboard-btn, #friends-btn, #lan-btn, #photo-btn, #rebirth-btn,
 .settings-row button, #shop-speed-buy, #login-submit, #signup-submit, #forgot-submit, #code-submit,
 #reset-submit, #change-submit, #profile-submit, #google-btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
 }
 #settings-btn::before, #avatar-btn::before, #worlds-btn::before, #leaderboard-btn::before,
-#friends-btn::before, #lan-btn::before, #rebirth-btn::before, .settings-row button::before,
+#friends-btn::before, #lan-btn::before, #photo-btn::before, #rebirth-btn::before, .settings-row button::before,
 #shop-speed-buy::before, #login-submit::before, #signup-submit::before, #forgot-submit::before,
 #code-submit::before, #reset-submit::before, #change-submit::before, #profile-submit::before,
 #google-btn::before {
@@ -1052,6 +1079,7 @@ body.reduce-motion #win-toast.show { animation: none; }
 #leaderboard-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M8%2021h8M12%2017v4M7%204h10v5a5%205%200%200%201-10%200V4zM7%206H4v2a3%203%200%200%200%203%203M17%206h3v2a3%203%200%200%201-3%203'%2F%3E%3C%2Fsvg%3E"); }
 #friends-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M17%2021v-2a4%204%200%200%200-4-4H5a4%204%200%200%200-4%204v2'%2F%3E%3Ccircle%20cx%3D'9'%20cy%3D'7'%20r%3D'4'%2F%3E%3Cpath%20d%3D'M23%2021v-2a4%204%200%200%200-3-3.87M16%203.13a4%204%200%200%201%200%207.75'%2F%3E%3C%2Fsvg%3E"); }
 #lan-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M5%2012.55a11%2011%200%200%201%2014.08%200M1.42%209a16%2016%200%200%201%2021.16%200M8.53%2016.11a6%206%200%200%201%206.94%200M12%2020h.01'%2F%3E%3C%2Fsvg%3E"); }
+#photo-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M23%2019a2%202%200%200%201-2%202H3a2%202%200%200%201-2-2V8a2%202%200%200%201%202-2h4l2-3h6l2%203h4a2%202%200%200%201%202%202z'%2F%3E%3Ccircle%20cx%3D'12'%20cy%3D'13'%20r%3D'4'%2F%3E%3C%2Fsvg%3E"); }
 #rebirth-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M23%204v6h-6M1%2020v-6h6M3.51%209a9%209%200%200%201%2014.85-3.36L23%2010M1%2014l4.64%204.36A9%209%200%200%200%2020.49%2015'%2F%3E%3C%2Fsvg%3E"); }
 #music-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M9%2018V5l12-2v13'%2F%3E%3Ccircle%20cx%3D'6'%20cy%3D'18'%20r%3D'3'%2F%3E%3Ccircle%20cx%3D'18'%20cy%3D'16'%20r%3D'3'%2F%3E%3C%2Fsvg%3E"); }
 #sfx-btn { --ui-icon: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2024%2024'%20fill%3D'none'%20stroke%3D'black'%20stroke-width%3D'2'%20stroke-linecap%3D'round'%20stroke-linejoin%3D'round'%3E%3Cpath%20d%3D'M11%205L6%209H2v6h4l5%204V5zM19.07%204.93a10%2010%200%200%201%200%2014.14M15.54%208.46a5%205%200%200%201%200%207.07'%2F%3E%3C%2Fsvg%3E"); }

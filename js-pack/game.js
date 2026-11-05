@@ -133,13 +133,14 @@ const day = { bg: scene.background, fog: '#87ceeb', sky: '#ffffff', ground: '#4a
 const night = { bg: world2.sky, fog: '#05060f', sky: '#8090c0', ground: '#202024', hemi: 0.6, sun: 1.1 };
 const crystalNight = { bg: extraWorlds.sky3, fog: '#110c27', sky: '#d9ccff', ground: '#291742', hemi: 1.05, sun: 1.45 };
 const sunset = { bg: extraWorlds.sky4, fog: '#b96955', sky: '#ffe0ae', ground: '#84502d', hemi: 1.25, sun: 1.8 };
-const worldNames = { 1: 'WORLD 01 · STARTER MEADOW', 2: 'WORLD 02 · MOON RUN', 3: 'WORLD 03 · CRYSTAL SKY', 4: 'WORLD 04 · SUNSET ISLES' };
+const auroraNight = { bg: extraWorlds.sky5, fog: '#0e2b3a', sky: '#d6fff2', ground: '#1b3a4a', hemi: 0.95, sun: 1.35 };
+const worldNames = { 1: 'WORLD 01 · STARTER MEADOW', 2: 'WORLD 02 · MOON RUN', 3: 'WORLD 03 · CRYSTAL SKY', 4: 'WORLD 04 · SUNSET ISLES', 5: 'WORLD 05 · AURORA PEAKS' };
 let shownWorld = 1;
 function showWorld(world) {
   if (world === shownWorld) return;
   shownWorld = world;
   document.getElementById('world-indicator').textContent = worldNames[world] ?? worldNames[1];
-  const env = world === 2 ? night : world === 3 ? crystalNight : world === 4 ? sunset : day;
+  const env = world === 2 ? night : world === 3 ? crystalNight : world === 4 ? sunset : world === 5 ? auroraNight : day;
   scene.background = env.bg;
   scene.fog.color.set(env.fog);
   hemi.color.set(env.sky);
@@ -745,6 +746,32 @@ function updateChatZone(dt) {
   chatZoneBadge.textContent = others ? `CHATTING · ${others} here` : 'CHATTING AREA';
 }
 
+// Photo mode: hides the HUD so a clean frame can be saved as a PNG.
+let photoMode = false;
+const photoHint = document.getElementById('photo-hint');
+const photoBtn = document.getElementById('photo-btn');
+const photoSaveBtn = document.getElementById('photo-save');
+function setPhotoMode(on) {
+  photoMode = on;
+  document.body.classList.toggle('photo-mode', on);
+  photoHint.hidden = !on;
+  photoBtn.setAttribute('aria-pressed', String(on));
+  keys.clear();
+}
+function savePhoto() {
+  renderer.render(scene, camera);
+  const link = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  link.download = `plus1-speed-${stamp}.png`;
+  link.href = renderer.domElement.toDataURL('image/png');
+  link.click();
+  photoSaveBtn.textContent = 'Saved!';
+  setTimeout(() => { photoSaveBtn.textContent = 'Save PNG'; }, 1200);
+}
+photoBtn.addEventListener('click', () => setPhotoMode(!photoMode));
+photoSaveBtn.addEventListener('click', savePhoto);
+document.getElementById('photo-exit').addEventListener('click', () => setPhotoMode(false));
+
 const speedEl = document.getElementById('speed');
 const winsEl = document.getElementById('wins');
 const winToast = document.getElementById('win-toast');
@@ -967,7 +994,18 @@ const keys = new Set();
 let jumpPressed = false;
 const JUMP_KEYS = ['Space'];
 addEventListener('keydown', (e) => {
-  if (e.target === chatInput) return;
+  const target = e.target;
+  if (target instanceof HTMLElement && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+  if (e.key === 'p' || e.key === 'P') {
+    e.preventDefault();
+    setPhotoMode(!photoMode);
+    return;
+  }
+  if (photoMode) {
+    if (e.key === 'Escape') setPhotoMode(false);
+    else if (e.key === 'Enter') { e.preventDefault(); savePhoto(); }
+    return;
+  }
   if (e.key === 'Enter' || e.key === '/') {
     e.preventDefault();
     chatInput.focus();

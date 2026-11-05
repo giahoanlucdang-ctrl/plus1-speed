@@ -125,6 +125,7 @@
     <button id="leaderboard-btn" type="button">Leaderboard</button>
     <button id="friends-btn" type="button">Friends</button>
     <button id="lan-btn" type="button" hidden>LAN</button>
+    <button id="photo-btn" type="button" aria-pressed="false">Photo</button>
     <div id="avatar-list" hidden></div>
     <button id="rebirth-btn">Rebirth</button>
   </div>
@@ -167,6 +168,7 @@
         <button class="world-choice moon" data-world="2" type="button"><span>02</span><strong>Moon Run</strong><small>Space hills & moving tracks</small></button>
         <button class="world-choice crystal" data-world="3" type="button"><span>03</span><strong>Crystal Sky</strong><small>Four obbies · neon crystal theme</small></button>
         <button class="world-choice sunset" data-world="4" type="button"><span>04</span><strong>Sunset Isles</strong><small>Four obbies · warm desert theme</small></button>
+        <button class="world-choice aurora wide" data-world="5" type="button"><span>05</span><strong>Aurora Peaks</strong><small>Five obbies · icy night sky with aurora</small></button>
       </div>
     </div>
   </section>
@@ -308,6 +310,11 @@
   </section>
   <div id="world-indicator" aria-live="polite">WORLD 01 · STARTER MEADOW</div>
   <div id="chat-zone-badge" aria-live="polite" hidden>CHATTING AREA</div>
+  <div id="photo-hint" hidden>
+    <span>PHOTO MODE</span>
+    <button id="photo-save" type="button">Save PNG</button>
+    <button id="photo-exit" type="button">Exit</button>
+  </div>
   <div id="room-count" hidden></div>
   <div id="fps-counter" hidden></div>
   <div id="play-time" role="timer" aria-live="off">Play time 00:00:00</div>
