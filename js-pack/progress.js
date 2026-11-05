@@ -32,6 +32,10 @@ export const progress = {
   passwordSalt: typeof saved.passwordSalt === 'string' ? saved.passwordSalt : '',
   friends: normalizeFriends(saved.friends),
   bestSpeed: Number.isFinite(saved.bestSpeed) && saved.bestSpeed >= 1 ? saved.bestSpeed : 1,
+  deaths: Number.isSafeInteger(saved.deaths) && saved.deaths >= 0 ? saved.deaths : 0,
+  jumps: Number.isSafeInteger(saved.jumps) && saved.jumps >= 0 ? saved.jumps : 0,
+  distance: Number.isFinite(saved.distance) && saved.distance >= 0 ? saved.distance : 0,
+  bestDistance: Number.isFinite(saved.bestDistance) && saved.bestDistance >= 0 ? saved.bestDistance : 0,
   dailyStreak: Number.isSafeInteger(saved.dailyStreak) && saved.dailyStreak >= 0 ? saved.dailyStreak : 0,
   dailyClaimedDay: typeof saved.dailyClaimedDay === 'string' ? saved.dailyClaimedDay.slice(0, 10) : '',
   achievements: Array.isArray(saved.achievements)
@@ -57,6 +61,10 @@ function applySavedProgress(data) {
   if (typeof data.passwordSalt === 'string') progress.passwordSalt = data.passwordSalt;
   if (Array.isArray(data.friends)) progress.friends = normalizeFriends(data.friends);
   if (Number.isFinite(data.bestSpeed) && data.bestSpeed >= 1 && data.bestSpeed <= 1e12) progress.bestSpeed = data.bestSpeed;
+  if (Number.isSafeInteger(data.deaths) && data.deaths >= 0 && data.deaths <= 1e9) progress.deaths = data.deaths;
+  if (Number.isSafeInteger(data.jumps) && data.jumps >= 0 && data.jumps <= 1e9) progress.jumps = data.jumps;
+  if (Number.isFinite(data.distance) && data.distance >= 0 && data.distance <= 1e12) progress.distance = data.distance;
+  if (Number.isFinite(data.bestDistance) && data.bestDistance >= 0 && data.bestDistance <= 1e12) progress.bestDistance = data.bestDistance;
   if (Number.isSafeInteger(data.dailyStreak) && data.dailyStreak >= 0 && data.dailyStreak <= 3650) progress.dailyStreak = data.dailyStreak;
   if (typeof data.dailyClaimedDay === 'string') progress.dailyClaimedDay = data.dailyClaimedDay.slice(0, 10);
   if (Array.isArray(data.achievements)) {
@@ -79,6 +87,10 @@ export function progressSnapshot() {
     nickname: progress.nickname,
     friends: [...progress.friends],
     bestSpeed: progress.bestSpeed,
+    deaths: progress.deaths,
+    jumps: progress.jumps,
+    distance: progress.distance,
+    bestDistance: progress.bestDistance,
     dailyStreak: progress.dailyStreak,
     dailyClaimedDay: progress.dailyClaimedDay,
     achievements: [...progress.achievements],
@@ -100,6 +112,10 @@ export function resetProgressData() {
   progress.unlocked = [1];
   progress.friends = [];
   progress.bestSpeed = 1;
+  progress.deaths = 0;
+  progress.jumps = 0;
+  progress.distance = 0;
+  progress.bestDistance = 0;
   progress.dailyStreak = 0;
   progress.dailyClaimedDay = '';
   progress.achievements = [];

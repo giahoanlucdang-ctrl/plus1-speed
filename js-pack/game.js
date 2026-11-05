@@ -358,6 +358,37 @@ fpsBtn.addEventListener('click', () => {
   renderFpsButton();
 });
 renderFpsButton();
+const motionBtn = document.getElementById('motion-btn');
+let reduceMotion = false;
+try { reduceMotion = localStorage.getItem('reduce-motion') === 'true'; } catch {}
+function applyReduceMotion() {
+  document.body.classList.toggle('reduce-motion', reduceMotion);
+  motionBtn.textContent = reduceMotion ? 'Motion on' : 'Reduce motion';
+  motionBtn.setAttribute('aria-pressed', String(reduceMotion));
+}
+motionBtn.addEventListener('click', () => {
+  reduceMotion = !reduceMotion;
+  try { localStorage.setItem('reduce-motion', String(reduceMotion)); } catch {}
+  applyReduceMotion();
+});
+applyReduceMotion();
+document.getElementById('reset-camera-btn').addEventListener('click', () => resetCamera());
+const inviteBtn = document.getElementById('invite-btn');
+inviteBtn.addEventListener('click', async () => {
+  const link = location.href;
+  let copied = false;
+  try { await navigator.clipboard.writeText(link); copied = true; } catch {}
+  if (!copied) {
+    const field = document.createElement('textarea');
+    field.value = link;
+    document.body.append(field);
+    field.select();
+    try { copied = document.execCommand('copy'); } catch {}
+    field.remove();
+  }
+  inviteBtn.textContent = copied ? 'Copied!' : 'Copy failed';
+  setTimeout(() => { inviteBtn.textContent = 'Copy link'; }, 1500);
+});
 const restoreFile = document.getElementById('restore-file');
 document.getElementById('backup-save-btn').addEventListener('click', () => exportSave());
 document.getElementById('restore-save-btn').addEventListener('click', () => restoreFile.click());
@@ -649,14 +680,42 @@ const mp = {
 // Chat: Enter to type, Enter to send, Esc to cancel
 const chatForm = document.getElementById('chat');
 const chatInput = document.getElementById('chat-input');
+const chatEmojis = document.getElementById('chat-emojis');
+let chatRecent = [];
+try {
+  const stored = JSON.parse(localStorage.getItem('chat-recent') ?? '[]');
+  if (Array.isArray(stored)) chatRecent = stored.filter((t) => typeof t === 'string' && t.trim()).slice(-10);
+} catch {}
+let recallIndex = chatRecent.length;
+function rememberChat(text) {
+  chatRecent = [...chatRecent.filter((t) => t !== text), text].slice(-10);
+  recallIndex = chatRecent.length;
+  try { localStorage.setItem('chat-recent', JSON.stringify(chatRecent)); } catch {}
+}
 chatForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  if (mp.chat(chatInput.value) === false) return;
+  const text = chatInput.value;
+  if (mp.chat(text) === false) return;
+  if (text.trim()) rememberChat(text.trim());
   chatInput.value = '';
   chatInput.blur();
 });
 chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') chatInput.blur();
+  if (e.key === 'ArrowUp' && chatRecent.length) {
+    e.preventDefault();
+    recallIndex = Math.max(0, recallIndex - 1);
+    chatInput.value = chatRecent[recallIndex] ?? '';
+  }
+  if (e.key === 'ArrowDown' && recallIndex < chatRecent.length) {
+    e.preventDefault();
+    recallIndex = Math.min(chatRecent.length, recallIndex + 1);
+    chatInput.value = chatRecent[recallIndex] ?? '';
+  }
+});
+chatEmojis?.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-emoji]');
+  if (btn) mp.chat(btn.dataset.emoji);
 });
 chatInput.addEventListener('focus', () => keys.clear());
 
@@ -669,6 +728,10 @@ const playTimeEl = document.getElementById('play-time');
 const lbSpeed = document.getElementById('lb-speed');
 const lbTime = document.getElementById('lb-time');
 const lbStreak = document.getElementById('lb-streak');
+const lbDistance = document.getElementById('lb-distance');
+const lbRun = document.getElementById('lb-run');
+const lbDeaths = document.getElementById('lb-deaths');
+const lbJumps = document.getElementById('lb-jumps');
 const leaderboardUi = document.getElementById('leaderboard-ui');
 const leaderboardRowsEl = document.getElementById('leaderboard-rows');
 
@@ -833,6 +896,12 @@ function updatePlayTime() {
   playTimeEl.textContent = `Play time ${formatted}`;
   lbTime.textContent = formatted;
 }
+function renderRecords() {
+  lbDistance.textContent = `${Math.round(progress.distance).toLocaleString()} m`;
+  lbRun.textContent = `${Math.round(progress.bestDistance).toLocaleString()} m`;
+  lbDeaths.textContent = progress.deaths.toLocaleString();
+  lbJumps.textContent = progress.jumps.toLocaleString();
+}
 let playTimeSaveTimer = 0;
 const showStats = () => {
   speedEl.textContent = progress.speed;
@@ -841,6 +910,7 @@ const showStats = () => {
   rebirthsEl.textContent = progress.rebirths;
   lbSpeed.textContent = progress.bestSpeed;
   lbStreak.textContent = `${progress.dailyStreak} day${progress.dailyStreak === 1 ? '' : 's'}`;
+  renderRecords();
   renderShopOffer();
   renderExchangeOffer();
   renderRebirth();
@@ -889,9 +959,28 @@ const jumpHeld = () => held(...JUMP_KEYS) || jump.held;
 // Camera orbit (drag to look)
 const PITCH = 0.35;
 const CAM_DIST = 9;
+const ZOOM_KEY = 'camera-zoom';
+const readZoom = () => {
+  try {
+    const raw = localStorage.getItem(ZOOM_KEY);
+    const value = raw === null ? NaN : Number(raw);
+    if (Number.isFinite(value)) return Math.min(160, Math.max(60, value));
+  } catch {}
+  return 100;
+};
+let cameraZoom = readZoom();
 let yaw = 0;
 let pitch = PITCH;
-let camDist = CAM_DIST;
+let camDist = CAM_DIST * cameraZoom / 100;
+const zoomInput = document.getElementById('camera-zoom');
+if (zoomInput) {
+  zoomInput.value = String(Math.round(cameraZoom));
+  zoomInput.addEventListener('input', () => {
+    cameraZoom = Math.min(160, Math.max(60, Number(zoomInput.value) || 100));
+    camDist = CAM_DIST * cameraZoom / 100;
+    try { localStorage.setItem(ZOOM_KEY, String(Math.round(cameraZoom))); } catch {}
+  });
+}
 canvas.addEventListener('wheel', (e) => {
   e.preventDefault();
   camDist = THREE.MathUtils.clamp(camDist * Math.exp(e.deltaY * 0.001), 3, 40);
@@ -943,6 +1032,7 @@ function resetCamera() {
 
 let shards = null;
 function die() {
+  progress.deaths += 1;
   if (avatar) shards = shatter(avatar.root, scene, player.vel.clone());
   player.vel.set(0, 0, 0);
   playerMesh.visible = false;
@@ -959,6 +1049,12 @@ function syncDeathVisual() {
 }
 
 const wish = new THREE.Vector3();
+const trackPos = new THREE.Vector3();
+let trackInit = false;
+let lifeDistance = 0;
+// Only celebrate runs once the player already has a record worth beating.
+const bestRunAtStart = progress.bestDistance;
+let distanceNotified = bestRunAtStart < 50;
 function update(dt, now) {
   const f = (held('KeyW', 'ArrowUp') ? 1 : 0) - (held('KeyS', 'ArrowDown') ? 1 : 0) + stick.y;
   const r = (held('KeyD', 'ArrowRight') ? 1 : 0) - (held('KeyA', 'ArrowLeft') ? 1 : 0) + stick.x;
@@ -968,13 +1064,29 @@ function update(dt, now) {
   controls.uz = player.dead > 0 ? 0 : wish.z;
   controls.jump = player.dead <= 0 && (jumpHeld() || jump.pressed);
   const pressed = player.dead <= 0 && (jumpPressed || jump.pressed);
-  if (pressed && player.grounded) playSfx('jump');
+  if (pressed && player.grounded) { playSfx('jump'); progress.jumps += 1; }
   if (pressed) controls.j++;
   controls.slow = held('ShiftLeft','ShiftRight');
   jump.pressed = false;
   jumpPressed = false;
   const n = player.n;
   prediction.step(dt, {x:controls.ux,z:controls.uz,jump:controls.jump,pressed,slow:controls.slow}, now);
+  // Lifetime distance: skip teleports (world change) so the record stays honest.
+  if (trackInit) {
+    const step = Math.hypot(player.pos.x - trackPos.x, player.pos.z - trackPos.z);
+    if (step < 2) {
+      progress.distance += step;
+      lifeDistance += step;
+      if (lifeDistance > progress.bestDistance) {
+        progress.bestDistance = lifeDistance;
+        if (!distanceNotified) {
+          distanceNotified = true;
+          showRewardWhenReady('New best run', `${Math.round(progress.bestDistance)} m without falling`);
+        }
+      }
+    }
+  } else trackInit = true;
+  trackPos.set(player.pos.x, 0, player.pos.z);
   const inShop = player.world === 1 && shop.containsPlayer(player.pos.x, player.pos.z);
   const inExchangeShop = player.world === 1 && exchangeShop.containsPlayer(player.pos.x, player.pos.z);
   if (!inShop) {
@@ -998,6 +1110,7 @@ function update(dt, now) {
     dispatchEvent(new CustomEvent('progress:server'));
   }
   if (player.n !== n) {
+    lifeDistance = 0;
     renderOffset.set(0,0,0);
     resetCamera();
     spawnMarkers.burst(player.pos, nextSpawnEffect);
@@ -1016,6 +1129,7 @@ function draw(dt) {
   if (achievementTimer >= 1) {
     achievementTimer = 0;
     checkAchievements();
+    renderRecords();
     if (!leaderboardUi.hidden) renderLeaderboard();
   }
   const w = innerWidth, h = innerHeight;

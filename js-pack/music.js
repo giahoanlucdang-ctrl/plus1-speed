@@ -42,3 +42,9 @@ const start = () => {
   }).catch(() => {});
 };
 for (const e of ['pointerdown', 'keydown', 'touchstart']) addEventListener(e, start);
+
+// Don't keep playing in a background tab or while the phone screen is off.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) music.pause();
+  else if (enabled) start();
+});

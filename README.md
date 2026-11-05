@@ -10,7 +10,7 @@ Game 3D chạy trên nền web (Three.js): chạy liên tục để Speed tự t
 - **Speed tự tăng**: cứ mỗi giây sống sót là Speed +1 (tăng theo Wins và Rebirths); hết Speed khi va chướng ngại vật thì hồi sinh tại spawn.
 - **Exchange Wins to Speed**, shop phụ kiện, bảng Characters, Leaderboard và Rebirth.
 - **Điểm danh hằng ngày**: mỗi ngày vào game lần đầu được +Wins, chuỗi ngày liên tiếp tăng dần (tối đa +5 Wins/ngày, nghỉ 1 ngày là mất chuỗi).
-- **16 thành tích (milestones)**: mốc Wins, Speed, Rebirth, mở world, kết bạn, chơi đủ 1 giờ… — mở khoá vĩnh viễn, xem trong bảng Leaderboard.
+- **19 thành tích (milestones)**: mốc Wins, Speed, Rebirth, mở world, kết bạn, quãng đường, số lần nhảy/ngã… — mở khoá vĩnh viễn, xem trong bảng Leaderboard.
 - **Leaderboard theo phòng**: xếp hạng mọi người đang online theo Wins, kèm danh hiệu theo số lần Rebirth (Racer → Speedster → Rocket → Legend).
 - **Chế độ đồ hoạ thấp** cho máy yếu, tự bật khi máy chỉ có ≤2 GB RAM / 2 nhân hoặc khi FPS trung bình dưới 35 trong 5 giây đầu.
 - **LAN multiplayer**: nhiều người chơi cùng wifi, chat, bubble chat, danh sách người chơi, báo người vào/rời phòng.
@@ -119,6 +119,14 @@ git push origin v1.5.0
 GitHub Actions sẽ build Windows, Linux, Android rồi gắn file vào GitHub Release.
 
 ## Changelog
+
+### v1.6.0 (2026-11-05)
+- Chat có hàng **cảm xúc nhanh** (👍 😂 🔥 😮) bấm là gửi; nhấn ↑/↓ trong ô chat để gọi lại tin vừa gửi.
+- Leaderboard thêm hồ sơ cá nhân: tổng quãng đường, chặng chạy dài nhất, số lần ngã, số lần nhảy.
+- Thêm 3 thành tích mới (tổng 19): Explorer (1 km), Springboard (500 lần nhảy), Persistence (ngã 25 lần).
+- Thông báo **New best run** khi phá kỷ lục chặng chạy dài nhất trong phiên chơi.
+- Settings mới: thanh **Camera distance** (lưu lại), nút **Reset view**, nút **Copy invite link**, công tắc **Reduce motion** (tắt hiệu ứng rung/nảy), và dòng hướng dẫn phím.
+- Nhạc nền tự dừng khi chuyển sang tab/app khác và tự chạy lại khi quay về.
 
 ### v1.5.0 (2026-11-05)
 - Settings có thêm thanh chỉnh âm lượng hiệu ứng (tiếng bước chân, nhảy, win, rebirth), tách riêng với âm lượng nhạc.

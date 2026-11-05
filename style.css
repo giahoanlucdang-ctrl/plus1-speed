@@ -330,7 +330,7 @@ canvas:active {
 }
 .rank-title.legend { background: #ffe9a8; color: #7a5200; }
 .rank-empty { margin: 8px 6px; color: #5f6f60; font-size: 14px; }
-.record-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.record-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; margin-top: 8px; }
 .record { display: flex; flex-direction: column; gap: 2px; padding: 9px 10px; border-radius: 12px; background: #eef4ec; }
 .record small { color: #5f6f60; font-size: 11px; font-weight: 700; }
 .record strong { color: #213b26; font-size: 16px; font-variant-numeric: tabular-nums; }
@@ -827,6 +827,20 @@ body.touch #chat-input {
   color: white;
 }
 #chat { display: flex; gap: 6px; margin: 0; }
+#chat-emojis { display: flex; gap: 4px; margin: 0 0 6px; }
+#chat-emojis button {
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+}
+#chat-emojis button:hover { background: rgba(255, 255, 255, 0.22); }
+#chat-emojis[hidden] { display: none; }
 #chat-input { box-sizing: border-box; flex: 1; width: 0; min-width: 0; }
 #chat-history {
   margin-bottom: 6px;
@@ -893,6 +907,11 @@ body.touch #chat-input { width: 0; }
 @media (prefers-reduced-motion: reduce) {
   button:hover:not(:disabled) { animation: none; }
 }
+
+/* Settings toggle for players who dislike the wiggle and popping toasts. */
+body.reduce-motion button:hover:not(:disabled),
+body.reduce-motion #reward-toast.show,
+body.reduce-motion #win-toast.show { animation: none; }
 
 /* Short landscape screens (phones, small laptops): keep every card scrollable. */
 .settings-card,

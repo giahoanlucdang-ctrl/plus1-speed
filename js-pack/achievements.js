@@ -20,6 +20,9 @@ export const ACHIEVEMENTS = [
   { id: 'shop1', name: 'Investor', desc: 'Buy the Speed Generator', test: () => progress.shopSpeed >= 1 },
   { id: 'play1h', name: 'Marathon', desc: 'Play for 1 hour', test: () => progress.playTime >= 3600 },
   { id: 'daily7', name: 'Regular', desc: 'Reach a 7-day streak', test: () => progress.dailyStreak >= 7 },
+  { id: 'distance1k', name: 'Explorer', desc: 'Walk 1 km in total', test: () => progress.distance >= 1000 },
+  { id: 'jumps500', name: 'Springboard', desc: 'Jump 500 times', test: () => progress.jumps >= 500 },
+  { id: 'deaths25', name: 'Persistence', desc: 'Get shattered 25 times', test: () => progress.deaths >= 25 },
 ];
 
 const known = new Set(ACHIEVEMENTS.map((a) => a.id));

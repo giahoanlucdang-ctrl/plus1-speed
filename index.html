@@ -140,6 +140,11 @@
         <div class="settings-row"><div><strong>Effects volume</strong><small>Jump, win and footstep level</small></div><input id="sfx-volume" type="range" min="0" max="100" value="70" step="5" aria-label="Effects volume"></div>
         <div class="settings-row"><div><strong>Graphics</strong><small>Low mode for older phones</small></div><button id="graphics-btn" type="button" aria-pressed="false">Use low graphics</button></div>
         <div class="settings-row"><div><strong>FPS display</strong><small>Show the current frame rate</small></div><button id="fps-btn" type="button" aria-pressed="false">Show FPS</button></div>
+        <div class="settings-row"><div><strong>Camera distance</strong><small>Zoom the third-person camera</small></div><input id="camera-zoom" type="range" min="60" max="160" value="100" step="5" aria-label="Camera distance"></div>
+        <div class="settings-row"><div><strong>Reduce motion</strong><small>Turn off button and toast animations</small></div><button id="motion-btn" type="button" aria-pressed="false">Reduce motion</button></div>
+        <div class="settings-row"><div><strong>Camera view</strong><small>Reset the camera angle</small></div><button id="reset-camera-btn" type="button">Reset view</button></div>
+        <div class="settings-row"><div><strong>Invite link</strong><small>Copy the room link to share</small></div><button id="invite-btn" type="button">Copy link</button></div>
+        <div class="settings-row"><div><strong>Controls</strong><small>WASD / arrows move · Space jump · Enter chat · Scroll or pinch to zoom</small></div></div>
         <div class="settings-row"><div><strong>Backup save</strong><small>Download your progress as a file</small></div><button id="backup-save-btn" type="button">Backup</button></div>
         <div class="settings-row"><div><strong>Restore save</strong><small>Load progress from a backup file</small></div><button id="restore-save-btn" type="button">Restore</button></div>
         <div class="settings-row"><div><strong>Google account</strong><small id="account-status">Offline</small></div><button id="link-google-btn" type="button">Link Google</button></div>
@@ -261,6 +266,10 @@
         <div class="record"><small>Play time</small><strong id="lb-time">00:00:00</strong></div>
         <div class="record"><small>Daily streak</small><strong id="lb-streak">0 days</strong></div>
         <div class="record"><small>Milestones</small><strong id="lb-ach">0/16</strong></div>
+        <div class="record"><small>Distance</small><strong id="lb-distance">0 m</strong></div>
+        <div class="record"><small>Longest run</small><strong id="lb-run">0 m</strong></div>
+        <div class="record"><small>Deaths</small><strong id="lb-deaths">0</strong></div>
+        <div class="record"><small>Jumps</small><strong id="lb-jumps">0</strong></div>
       </div>
       <h3 class="friends-subhead">Milestones</h3>
       <div id="achievement-list" class="achievement-list"></div>
@@ -321,6 +330,12 @@
       <div class="chat-history-top"><button id="chat-close" type="button" aria-label="Hide chat history">X</button></div>
       <div id="chat-messages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
     </section>
+    <div id="chat-emojis" aria-label="Quick reactions">
+      <button type="button" data-emoji="👍" aria-label="Send thumbs up">👍</button>
+      <button type="button" data-emoji="😂" aria-label="Send laugh">😂</button>
+      <button type="button" data-emoji="🔥" aria-label="Send fire">🔥</button>
+      <button type="button" data-emoji="😮" aria-label="Send wow">😮</button>
+    </div>
     <form id="chat" autocomplete="off">
       <input id="chat-input" maxlength="120" placeholder="Chat" aria-label="Chat" enterkeyhint="send">
       <button id="chat-open" type="button" aria-label="Show chat history" aria-controls="chat-history" aria-expanded="true" hidden>...</button>
